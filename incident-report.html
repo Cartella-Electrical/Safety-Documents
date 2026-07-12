@@ -1,0 +1,1585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Incident Report - Cartella</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/signature_pad/4.1.7/signature_pad.umd.min.js"></script>
+<style>
+  :root{
+    --red:#D8232A;
+    --red-dark:#a91a20;
+    --ink:#1c1c1c;
+    --black:#1a1a1a;
+    --gray-line:#cfcfcf;
+    --gray-bg:#f5f5f5;
+    --gray-text:#555;
+  }
+  *{box-sizing:border-box;}
+  html{
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-y:contain;
+  }
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--gray-bg);
+    color:var(--black);
+    padding-bottom:40px;
+    overscroll-behavior-y:contain;
+  }
+  header.brand{
+    background:var(--ink);color:#fff;padding:22px 24px 20px;
+    display:flex;justify-content:space-between;align-items:flex-start;gap:16px;
+  }
+  header.brand .logo-img{height:44px;width:auto;display:block;}
+  header.brand .contact{font-size:11px;line-height:1.7;color:#d8d8d8;text-align:right;}
+  .titlebar{background:var(--red);color:#fff;padding:12px 24px;font-size:17px;font-weight:600;letter-spacing:0.3px;}
+  @media (max-width:600px){
+    header.brand{flex-direction:column;}
+    header.brand .contact{text-align:left;}
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:16px;}
+  .card{
+    background:#fff;
+    border-radius:10px;
+    padding:18px;
+    margin-bottom:14px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.08);
+    border:1px solid #e8e8e8;
+  }
+  .section-title{
+    color:var(--red);
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+    margin:0 0 12px 0;
+    border-bottom:2px solid var(--red);
+    padding-bottom:6px;
+  }
+  label{
+    display:block;
+    font-size:13px;
+    font-weight:600;
+    color:#333;
+    margin-bottom:5px;
+    margin-top:12px;
+  }
+  label:first-child{margin-top:0;}
+  input[type=text], input[type=date], input[type=time], textarea{
+    width:100%;
+    padding:10px 12px;
+    font-size:15px;
+    border:1px solid #ccc;
+    border-radius:7px;
+    font-family:inherit;
+    background:#fff;
+  }
+  input[type=date], input[type=time]{
+    display:block;
+    box-sizing:border-box;
+    width:100% !important;
+    -webkit-appearance:none;
+    appearance:none;
+  }
+  input:focus, textarea:focus{
+    outline:none;
+    border-color:var(--red);
+    box-shadow:0 0 0 3px rgba(227,30,36,0.12);
+  }
+  textarea{resize:vertical;min-height:70px;}
+  .field-error input, .field-error textarea{
+    border-color:var(--red);
+    background:#fff5f5;
+  }
+  .field-error .choice-group{
+    outline:2px solid var(--red);
+    outline-offset:4px;
+    border-radius:6px;
+  }
+  .error-msg{
+    color:var(--red);
+    font-size:12.5px;
+    font-weight:600;
+    margin-top:5px;
+    display:none;
+  }
+  .field-error .error-msg{display:block;}
+
+  /* choice chips (checkbox / radio groups) */
+  .choice-group{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+  .choice{position:relative;}
+  .choice input{position:absolute;opacity:0;width:0;height:0;}
+  .choice label{
+    display:inline-block;margin:0;padding:8px 14px;
+    border:1px solid #ccc;border-radius:20px;
+    font-size:13px;font-weight:600;color:#444;background:#fff;
+    cursor:pointer;user-select:none;
+  }
+  .choice input:checked + label{background:var(--red);border-color:var(--red);color:#fff;}
+  .choice input:focus + label{box-shadow:0 0 0 3px rgba(227,30,36,0.18);}
+
+  /* WHS guidance note */
+  .note{
+    background:#fdecec;border:1px solid #f5c2c2;border-radius:7px;
+    padding:11px 13px;font-size:12.5px;color:#7a1f1f;line-height:1.55;margin-top:4px;
+  }
+  .note strong{color:var(--red-dark);}
+  .note ul{margin:6px 0 0 0;padding-left:18px;}
+  .note li{margin-bottom:2px;}
+
+  /* body map */
+  .bodymap-wrap{
+    display:flex;gap:12px;justify-content:center;align-items:flex-start;
+    margin-top:8px;
+  }
+  .bodymap-fig{flex:1;max-width:180px;text-align:center;}
+  .bodymap-fig svg{width:100%;height:auto;display:block;touch-action:manipulation;}
+  .bodymap-cap{
+    font-size:11px;font-weight:700;color:#888;text-transform:uppercase;
+    letter-spacing:0.4px;margin-bottom:4px;
+  }
+  .body-region{cursor:pointer;transition:fill 0.12s;}
+  .bodymap-hint{
+    text-align:center;font-size:11px;color:#aaa;margin-top:8px;font-style:italic;
+  }
+  .bodymap-summary{margin-top:10px;}
+  .bodymap-summary .chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .bodymap-summary .chip{
+    background:var(--red);color:#fff;border-radius:14px;
+    padding:4px 11px;font-size:12px;font-weight:600;
+  }
+  .bodymap-summary .none{color:#999;font-style:italic;font-size:12.5px;}
+
+  .sig-box{
+    border:1.5px dashed #bbb;
+    border-radius:7px;
+    background:#fafafa;
+    position:relative;
+    touch-action:none;
+    height:140px;
+    overflow:hidden;
+  }
+  .sig-box canvas{width:100%;height:100%;display:block;touch-action:none;}
+  .sig-placeholder{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    color:#aaa;font-size:13px;pointer-events:none;
+  }
+  .sig-actions{display:flex;justify-content:flex-end;margin-top:6px;}
+  .btn-clear{
+    background:none;border:none;color:var(--gray-text);font-size:12.5px;
+    font-weight:600;text-decoration:underline;padding:4px;cursor:pointer;
+  }
+
+  .entry-item{
+    border-top:1px solid #eee;
+    padding-top:14px;
+    margin-top:14px;
+  }
+  .entry-item:first-of-type{border-top:none;padding-top:0;margin-top:0;}
+  .entry-head{
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .entry-head h3{
+    font-size:13.5px;color:var(--red);margin:0;font-weight:700;letter-spacing:0.3px;
+  }
+  .remove-link{
+    background:none;border:none;color:#999;font-size:12px;cursor:pointer;
+    text-decoration:underline;padding:2px;
+  }
+
+  .add-btn{
+    width:100%;
+    padding:12px;
+    background:#fff;
+    border:1.5px dashed var(--red);
+    color:var(--red);
+    font-weight:700;
+    font-size:14px;
+    border-radius:8px;
+    margin-top:14px;
+    cursor:pointer;
+  }
+  .add-btn:active{background:#fff0f0;}
+
+  .submit-btn{
+    width:100%;
+    padding:16px;
+    background:var(--red);
+    color:#fff;
+    border:none;
+    font-weight:700;
+    font-size:16px;
+    letter-spacing:0.4px;
+    border-radius:9px;
+    cursor:pointer;
+    margin-top:6px;
+    box-shadow:0 2px 8px rgba(227,30,36,0.3);
+  }
+  .submit-btn:active{background:#c81a1f;}
+  .submit-btn:disabled{background:#e0a2a4;box-shadow:none;}
+
+  .btn-secondary{
+    width:100%;
+    padding:14px;
+    background:#fff;
+    color:var(--gray-text);
+    border:1px solid #ccc;
+    font-weight:700;
+    font-size:14px;
+    border-radius:9px;
+    cursor:pointer;
+    margin-top:10px;
+  }
+  .btn-secondary:active{background:#f5f5f5;}
+
+  .status-banner{
+    position:fixed;top:0;left:0;right:0;
+    padding:14px 16px;
+    text-align:center;
+    font-weight:600;
+    font-size:14px;
+    color:#fff;
+    z-index:999;
+    transform:translateY(-100%);
+    transition:transform 0.25s ease;
+  }
+  .status-banner.show{transform:translateY(0);}
+  .status-banner.saving{background:#333;}
+  .status-banner.info{background:#333;}
+  .status-banner.success{background:#1e8e3e;}
+  .status-banner.error{background:var(--red);}
+
+  .overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,0.5);
+    display:none;align-items:center;justify-content:center;z-index:1000;
+    padding:20px;
+  }
+  .overlay.show{display:flex;}
+  .overlay-card{
+    background:#fff;border-radius:12px;padding:22px;text-align:center;
+    max-width:320px;
+  }
+  .overlay-card .spinner{
+    width:34px;height:34px;border:3px solid #eee;border-top-color:var(--red);
+    border-radius:50%;margin:0 auto 14px auto;animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .overlay-card p{margin:0;font-size:14px;color:#333;}
+
+  .foot-note{
+    text-align:center;font-size:11px;color:#999;margin-top:16px;
+  }
+
+  .capturing .add-btn,
+  .capturing .remove-link,
+  .capturing .btn-clear,
+  .capturing .submit-btn,
+  .capturing .btn-secondary,
+  .capturing .foot-note,
+  .capturing .status-banner,
+  .capturing .sig-placeholder{
+    display:none !important;
+  }
+  .capturing .sig-box{
+    border:1px solid var(--gray-line);
+  }
+
+  @media print{
+    /* Force backgrounds/colours to print so the dark header + red bars (and the
+       light Cartella logo that sits on them) render as they do on screen. */
+    *{
+      -webkit-print-color-adjust:exact !important;
+      print-color-adjust:exact !important;
+    }
+    @page{ margin:12mm; }
+    html,body{ background:#fff !important; padding:0 !important; }
+    .wrap{ max-width:100%; margin:0; padding:0; }
+
+    /* Hide interactive-only controls */
+    .add-btn,.remove-link,.btn-clear,.submit-btn,.btn-secondary,.foot-note,.status-banner,.overlay{display:none !important;}
+
+    /* Keep the branding block intact and at the top */
+    header.brand,.titlebar{ break-inside:avoid; page-break-inside:avoid; }
+
+    /* Never split an individual field, box, chip group, signature or figure
+       across a page break — this is what was cutting text boxes in half. */
+    .card>div,.entry-item,.sig-box,.worker-mini-sig,.choice-group,
+    .note,.bodymap-wrap,.bodymap-fig,input,textarea,label{
+      break-inside:avoid; page-break-inside:avoid;
+    }
+    /* Keep a section heading with the content that follows it */
+    .section-title{ break-after:avoid; page-break-after:avoid; }
+
+    .card{
+      box-shadow:none;
+      border:1px solid #ddd;
+      margin-bottom:12px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div id="statusBanner" class="status-banner"></div>
+
+<header class="brand">
+  <div>
+    <img class="logo-img" id="brandLogo" src="" alt="Cartella Electrical">
+  </div>
+  <div class="contact">
+    p&nbsp; 1300 973 287<br>
+    a&nbsp; PO Box 1076, Lutwyche, QLD 4030<br>
+    e&nbsp; info@cartella.com.au<br>
+    w&nbsp; www.cartella.com.au
+  </div>
+</header>
+<div class="titlebar">Incident report</div>
+
+<div class="wrap">
+
+  <!-- ============ REPORT DETAILS ============ -->
+  <div class="card">
+    <p class="section-title">Report Details</p>
+
+    <div id="f-project">
+      <label>Project / Site Name</label>
+      <input type="text" id="projectName" placeholder="e.g. Melbourne St">
+      <div class="error-msg">Enter the project or site name.</div>
+    </div>
+
+    <div id="f-reportedBy">
+      <label>Report Completed By</label>
+      <input type="text" id="reportedBy" placeholder="Full name">
+      <div class="error-msg">Enter the name of the person completing this report.</div>
+    </div>
+
+    <div>
+      <label>Position / Role</label>
+      <input type="text" id="position" placeholder="e.g. Site Supervisor">
+    </div>
+
+    <div id="f-dateReported">
+      <label>Date Reported</label>
+      <input type="date" id="dateReported">
+      <div class="error-msg">Select the date this report was completed.</div>
+    </div>
+  </div>
+
+  <!-- ============ INCIDENT DETAILS ============ -->
+  <div class="card">
+    <p class="section-title">Incident Details</p>
+
+    <div id="f-incidentDate">
+      <label>Date of Incident</label>
+      <input type="date" id="incidentDate">
+      <div class="error-msg">Select the date the incident occurred.</div>
+    </div>
+
+    <div>
+      <label>Time of Incident</label>
+      <input type="time" id="incidentTime">
+    </div>
+
+    <div id="f-location">
+      <label>Exact Location on Site</label>
+      <input type="text" id="location" placeholder="e.g. Level 2 switchboard room">
+      <div class="error-msg">Enter where on site the incident occurred.</div>
+    </div>
+
+    <div id="f-incidentType">
+      <label>Type of Incident (select all that apply)</label>
+      <div class="choice-group" id="incidentTypeGroup">
+        <span class="choice"><input type="checkbox" name="incidentType" id="it_0" value="Injury / Illness"><label for="it_0">Injury / Illness</label></span>
+        <span class="choice"><input type="checkbox" name="incidentType" id="it_1" value="Near miss"><label for="it_1">Near miss</label></span>
+        <span class="choice"><input type="checkbox" name="incidentType" id="it_2" value="Property / plant damage"><label for="it_2">Property / plant damage</label></span>
+        <span class="choice"><input type="checkbox" name="incidentType" id="it_3" value="Environmental"><label for="it_3">Environmental</label></span>
+        <span class="choice"><input type="checkbox" name="incidentType" id="it_4" value="Dangerous incident"><label for="it_4">Dangerous incident</label></span>
+        <span class="choice"><input type="checkbox" name="incidentType" id="it_5" value="Fatality"><label for="it_5">Fatality</label></span>
+      </div>
+      <div class="error-msg">Select at least one incident type.</div>
+    </div>
+  </div>
+
+  <!-- ============ PEOPLE INVOLVED ============ -->
+  <div class="card">
+    <p class="section-title">People Involved</p>
+    <div id="personContainer"></div>
+    <button type="button" class="add-btn" id="addPersonBtn">+ Add Person</button>
+  </div>
+
+  <!-- ============ WHAT HAPPENED ============ -->
+  <div class="card">
+    <p class="section-title">What Happened</p>
+
+    <div id="f-description">
+      <label>Description of Incident</label>
+      <textarea id="description" placeholder="Describe what happened, in sequence — what was occurring immediately before, during and after the incident."></textarea>
+      <div class="error-msg">Describe what happened.</div>
+    </div>
+
+    <div>
+      <label>Task / Activity Being Performed</label>
+      <textarea id="activity" placeholder="What work was being carried out at the time?"></textarea>
+    </div>
+
+    <div>
+      <label>Plant / Equipment / Substances Involved</label>
+      <input type="text" id="equipment" placeholder="e.g. EWP, ladder, power tool, chemical...">
+    </div>
+  </div>
+
+  <!-- ============ INJURY / HARM DETAILS ============ -->
+  <div class="card">
+    <p class="section-title">Injury / Harm Details</p>
+    <p style="font-size:12px;color:#888;margin:-4px 0 4px;">Complete if a person was injured or made ill. Leave blank for a near miss with no harm.</p>
+
+    <div>
+      <label>Nature of Injury / Illness</label>
+      <textarea id="injuryNature" placeholder="e.g. laceration, fracture, burn, electric shock, strain..."></textarea>
+    </div>
+
+    <div id="f-bodyMap">
+      <label>Part(s) of Body Affected — tap to mark</label>
+      <div class="bodymap-wrap">
+        <div class="bodymap-fig">
+          <div class="bodymap-cap">Front</div>
+          <svg id="bodymapFront" viewBox="0 0 140 360" xmlns="http://www.w3.org/2000/svg">
+            <g fill="#e9e9e9" stroke="#a8a8a8" stroke-width="1.3">
+              <ellipse class="body-region" data-region="Head" cx="70" cy="30" rx="20" ry="24"/>
+              <rect class="body-region" data-region="Neck" x="60" y="52" width="20" height="12" rx="3"/>
+              <rect class="body-region" data-region="Chest" x="44" y="64" width="52" height="46" rx="7"/>
+              <rect class="body-region" data-region="Abdomen" x="46" y="112" width="48" height="42" rx="7"/>
+              <rect class="body-region" data-region="Pelvis / groin" x="48" y="156" width="44" height="28" rx="7"/>
+              <rect class="body-region" data-region="Right upper arm" x="24" y="66" width="17" height="44" rx="8"/>
+              <rect class="body-region" data-region="Left upper arm" x="99" y="66" width="17" height="44" rx="8"/>
+              <rect class="body-region" data-region="Right forearm" x="22" y="112" width="15" height="42" rx="7"/>
+              <rect class="body-region" data-region="Left forearm" x="103" y="112" width="15" height="42" rx="7"/>
+              <ellipse class="body-region" data-region="Right hand" cx="29" cy="164" rx="9" ry="12"/>
+              <ellipse class="body-region" data-region="Left hand" cx="111" cy="164" rx="9" ry="12"/>
+              <rect class="body-region" data-region="Right thigh" x="49" y="186" width="19" height="58" rx="8"/>
+              <rect class="body-region" data-region="Left thigh" x="72" y="186" width="19" height="58" rx="8"/>
+              <rect class="body-region" data-region="Right lower leg" x="51" y="246" width="15" height="56" rx="7"/>
+              <rect class="body-region" data-region="Left lower leg" x="74" y="246" width="15" height="56" rx="7"/>
+              <ellipse class="body-region" data-region="Right foot" cx="58" cy="312" rx="11" ry="9"/>
+              <ellipse class="body-region" data-region="Left foot" cx="82" cy="312" rx="11" ry="9"/>
+            </g>
+          </svg>
+        </div>
+        <div class="bodymap-fig">
+          <div class="bodymap-cap">Back</div>
+          <svg id="bodymapBack" viewBox="0 0 140 360" xmlns="http://www.w3.org/2000/svg">
+            <g fill="#e9e9e9" stroke="#a8a8a8" stroke-width="1.3">
+              <ellipse class="body-region" data-region="Head (back)" cx="70" cy="30" rx="20" ry="24"/>
+              <rect class="body-region" data-region="Neck (back)" x="60" y="52" width="20" height="12" rx="3"/>
+              <rect class="body-region" data-region="Upper back" x="44" y="64" width="52" height="46" rx="7"/>
+              <rect class="body-region" data-region="Lower back" x="46" y="112" width="48" height="42" rx="7"/>
+              <rect class="body-region" data-region="Buttocks" x="48" y="156" width="44" height="28" rx="7"/>
+              <rect class="body-region" data-region="Left upper arm (back)" x="24" y="66" width="17" height="44" rx="8"/>
+              <rect class="body-region" data-region="Right upper arm (back)" x="99" y="66" width="17" height="44" rx="8"/>
+              <rect class="body-region" data-region="Left forearm (back)" x="22" y="112" width="15" height="42" rx="7"/>
+              <rect class="body-region" data-region="Right forearm (back)" x="103" y="112" width="15" height="42" rx="7"/>
+              <ellipse class="body-region" data-region="Left hand (back)" cx="29" cy="164" rx="9" ry="12"/>
+              <ellipse class="body-region" data-region="Right hand (back)" cx="111" cy="164" rx="9" ry="12"/>
+              <rect class="body-region" data-region="Left thigh (back)" x="49" y="186" width="19" height="58" rx="8"/>
+              <rect class="body-region" data-region="Right thigh (back)" x="72" y="186" width="19" height="58" rx="8"/>
+              <rect class="body-region" data-region="Left calf" x="51" y="246" width="15" height="56" rx="7"/>
+              <rect class="body-region" data-region="Right calf" x="74" y="246" width="15" height="56" rx="7"/>
+              <ellipse class="body-region" data-region="Left heel" cx="58" cy="312" rx="11" ry="9"/>
+              <ellipse class="body-region" data-region="Right heel" cx="82" cy="312" rx="11" ry="9"/>
+            </g>
+          </svg>
+        </div>
+      </div>
+      <div class="bodymap-hint">L / R are the worker's own left and right. Tap again to deselect.</div>
+      <div class="sig-actions"><button type="button" class="btn-clear" onclick="clearBodyMap()">Clear body map</button></div>
+      <div class="bodymap-summary" id="bodymapSummary"></div>
+    </div>
+
+    <div>
+      <label>Other / Further Detail (optional)</label>
+      <input type="text" id="bodyPart" placeholder="Anything the diagram doesn't capture">
+    </div>
+
+    <div>
+      <label>Treatment Provided (select all that apply)</label>
+      <div class="choice-group" id="treatmentGroup">
+        <span class="choice"><input type="checkbox" name="treatment" id="tr_0" value="No treatment"><label for="tr_0">No treatment</label></span>
+        <span class="choice"><input type="checkbox" name="treatment" id="tr_1" value="First aid"><label for="tr_1">First aid</label></span>
+        <span class="choice"><input type="checkbox" name="treatment" id="tr_2" value="Medical / GP"><label for="tr_2">Medical / GP</label></span>
+        <span class="choice"><input type="checkbox" name="treatment" id="tr_3" value="Hospital (outpatient)"><label for="tr_3">Hospital (outpatient)</label></span>
+        <span class="choice"><input type="checkbox" name="treatment" id="tr_4" value="Hospital admission"><label for="tr_4">Hospital admission</label></span>
+        <span class="choice"><input type="checkbox" name="treatment" id="tr_5" value="Ambulance"><label for="tr_5">Ambulance</label></span>
+      </div>
+    </div>
+
+    <div>
+      <label>Treatment Details</label>
+      <textarea id="treatmentDetails" placeholder="Who provided treatment, where the person was taken, etc."></textarea>
+    </div>
+  </div>
+
+  <!-- ============ WITNESSES ============ -->
+  <div class="card">
+    <p class="section-title">Witnesses</p>
+    <div id="witnessContainer"></div>
+    <button type="button" class="add-btn" id="addWitnessBtn">+ Add Witness</button>
+  </div>
+
+  <!-- ============ NOTIFIABLE INCIDENT ASSESSMENT ============ -->
+  <div class="card">
+    <p class="section-title">Notifiable Incident Assessment</p>
+
+    <div class="note">
+      <strong>Under the Work Health and Safety Act 2011 (Qld)</strong>, some incidents must be reported to
+      <strong>Workplace Health and Safety Queensland</strong> immediately. These are:
+      <ul>
+        <li>the death of a person;</li>
+        <li>a serious injury or illness (e.g. requiring immediate hospital admission or immediate medical treatment for specified injuries);</li>
+        <li>a dangerous incident (e.g. uncontrolled explosion, fire, electric shock, collapse or failure of plant/structure).</li>
+      </ul>
+      If notifiable: phone WHSQ on <strong>1300 362 128</strong> immediately, submit written notification within 48 hours,
+      preserve the incident site until an inspector advises otherwise (unless to help an injured person or make the area safe),
+      and keep the record for at least 5 years. In an emergency, call <strong>000</strong> first.
+    </div>
+
+    <div id="f-notifiable">
+      <label>Is this a notifiable incident?</label>
+      <div class="choice-group" id="notifiableGroup">
+        <span class="choice"><input type="radio" name="notifiable" id="nf_0" value="Yes"><label for="nf_0">Yes</label></span>
+        <span class="choice"><input type="radio" name="notifiable" id="nf_1" value="No"><label for="nf_1">No</label></span>
+        <span class="choice"><input type="radio" name="notifiable" id="nf_2" value="Unsure — escalate"><label for="nf_2">Unsure — escalate</label></span>
+      </div>
+      <div class="error-msg">Select an option.</div>
+    </div>
+
+    <div>
+      <label>Date &amp; Time WHSQ Notified (if applicable)</label>
+      <input type="text" id="whsqNotified" placeholder="e.g. 12/07/2026 3:15 PM">
+    </div>
+
+    <div>
+      <label>Notified By</label>
+      <input type="text" id="whsqBy" placeholder="Full name of person who notified WHSQ">
+    </div>
+
+    <div>
+      <label>WHSQ Reference Number</label>
+      <input type="text" id="whsqRef" placeholder="Reference provided by WHSQ, if any">
+    </div>
+  </div>
+
+  <!-- ============ IMMEDIATE ACTIONS & RISK ============ -->
+  <div class="card">
+    <p class="section-title">Immediate Actions &amp; Risk</p>
+
+    <div>
+      <label>Immediate Actions Taken</label>
+      <textarea id="immediateActions" placeholder="What was done straight away to make the area safe and prevent further harm?"></textarea>
+    </div>
+
+    <div>
+      <label>Risk of Recurrence</label>
+      <div class="choice-group" id="riskRatingGroup">
+        <span class="choice"><input type="radio" name="riskRating" id="rr_0" value="Low"><label for="rr_0">Low</label></span>
+        <span class="choice"><input type="radio" name="riskRating" id="rr_1" value="Medium"><label for="rr_1">Medium</label></span>
+        <span class="choice"><input type="radio" name="riskRating" id="rr_2" value="High"><label for="rr_2">High</label></span>
+        <span class="choice"><input type="radio" name="riskRating" id="rr_3" value="Critical"><label for="rr_3">Critical</label></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ CORRECTIVE ACTIONS ============ -->
+  <div class="card">
+    <p class="section-title">Corrective Actions</p>
+    <p style="font-size:12px;color:#888;margin:-4px 0 4px;">Actions to prevent this happening again.</p>
+    <div id="correctiveContainer"></div>
+    <button type="button" class="add-btn" id="addCorrectiveBtn">+ Add Corrective Action</button>
+  </div>
+
+  <!-- ============ SIGN-OFF ============ -->
+  <div class="card">
+    <p class="section-title">Sign-off</p>
+
+    <div id="f-sig">
+      <label>Signature — Person Completing Report</label>
+      <div class="sig-box" id="mainSigBox">
+        <canvas id="mainSigCanvas"></canvas>
+        <div class="sig-placeholder" id="mainSigPlaceholder">Sign here</div>
+      </div>
+      <div class="sig-actions"><button type="button" class="btn-clear" onclick="clearMainSig()">Clear</button></div>
+      <div class="error-msg">Signature is required.</div>
+    </div>
+
+    <div>
+      <label>Reviewed By (Supervisor / Manager)</label>
+      <input type="text" id="supervisorName" placeholder="Full name">
+    </div>
+
+    <div>
+      <label>Date Reviewed</label>
+      <input type="date" id="supervisorDate">
+    </div>
+
+    <div>
+      <label>Signature — Supervisor / Manager</label>
+      <div class="sig-box" id="supSigBox">
+        <canvas id="supSigCanvas"></canvas>
+        <div class="sig-placeholder" id="supSigPlaceholder">Sign here</div>
+      </div>
+      <div class="sig-actions"><button type="button" class="btn-clear" onclick="clearSupSig()">Clear</button></div>
+    </div>
+  </div>
+
+  <button type="button" class="submit-btn" id="submitBtn">Submit Incident Report</button>
+  <button type="button" class="btn-secondary" id="printBtn">Save / Print as PDF</button>
+  <button type="button" class="btn-secondary" id="resetBtn">Start New Form</button>
+  <p class="foot-note">Cartella Services Pty Ltd — Incident Report</p>
+
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="overlay-card">
+    <div class="spinner"></div>
+    <p id="overlayText">Saving...</p>
+  </div>
+</div>
+
+<script>
+/* ============ CONFIG ============ */
+// Paste the /exec URL of the Apps Script deployment for the INCIDENT REPORT folder here.
+// (Do NOT reuse the Toolbox URL — that would file incident reports into the toolbox folder.)
+const SCRIPT_URL = "PASTE_INCIDENT_REPORT_EXEC_URL_HERE";
+
+
+/* ============ LOGO ============ */
+document.getElementById('brandLogo').src = "data:image/png;base64,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";
+
+/* ============ STATE ============ */
+let personCount = 0;
+let witnessCount = 0;
+let correctiveCount = 0;
+let mainPad = null;
+let supPad = null;
+
+/* ============ CANVAS RESIZE MANAGEMENT ============
+   Mobile browsers fire 'resize' events when the address bar hides/shows
+   during scrolling. A single debounced listener touches a canvas only if
+   its box actually changed size, preserving any signature already drawn.
+*/
+const managedCanvases = []; // { canvas, pad, lastWidth, lastHeight }
+
+function registerCanvasForResize(canvas, pad){
+  const box = canvas.parentElement;
+  managedCanvases.push({ canvas, pad, lastWidth: box.clientWidth, lastHeight: box.clientHeight });
+}
+
+function resizeCanvas(canvas){
+  const ratio = Math.max(window.devicePixelRatio || 1, 1);
+  const box = canvas.parentElement;
+  canvas.width = box.clientWidth * ratio;
+  canvas.height = box.clientHeight * ratio;
+  canvas.getContext('2d').scale(ratio, ratio);
+}
+
+function resizeAllCanvases(){
+  managedCanvases.forEach(entry => {
+    if (!entry.canvas.isConnected) return;
+    const box = entry.canvas.parentElement;
+    const newW = box.clientWidth, newH = box.clientHeight;
+    if (newW === entry.lastWidth && newH === entry.lastHeight) return;
+    const data = entry.pad.isEmpty() ? null : entry.pad.toData();
+    resizeCanvas(entry.canvas);
+    entry.pad.clear();
+    if (data) entry.pad.fromData(data);
+    entry.lastWidth = newW;
+    entry.lastHeight = newH;
+  });
+}
+
+let resizeDebounceTimer = null;
+function scheduleResize(){
+  clearTimeout(resizeDebounceTimer);
+  resizeDebounceTimer = setTimeout(resizeAllCanvases, 200);
+}
+window.addEventListener('resize', scheduleResize);
+window.addEventListener('orientationchange', scheduleResize);
+
+/* ============ SIGNATURES ============ */
+function setupSig(canvasId, placeholderId){
+  const canvas = document.getElementById(canvasId);
+  resizeCanvas(canvas);
+  const pad = new SignaturePad(canvas, { backgroundColor:'rgba(0,0,0,0)', penColor:'#111' });
+  pad.addEventListener('beginStroke', () => {
+    document.getElementById(placeholderId).style.display = 'none';
+  });
+  pad.addEventListener('endStroke', scheduleSave);
+  registerCanvasForResize(canvas, pad);
+  return pad;
+}
+function clearMainSig(){
+  mainPad.clear();
+  document.getElementById('mainSigPlaceholder').style.display = 'block';
+  scheduleSave();
+}
+function clearSupSig(){
+  supPad.clear();
+  document.getElementById('supSigPlaceholder').style.display = 'block';
+  scheduleSave();
+}
+
+/* ============ PEOPLE INVOLVED ============ */
+function addPersonRow(prefill){
+  personCount++;
+  const id = personCount;
+  const div = document.createElement('div');
+  div.className = 'entry-item';
+  div.id = 'person-' + id;
+  div.innerHTML = `
+    <div class="entry-head">
+      <h3>PERSON ${id}</h3>
+      ${id > 1 ? `<button type="button" class="remove-link" onclick="removePersonRow(${id})">Remove</button>` : ''}
+    </div>
+    <label>Full Name</label>
+    <input type="text" id="personName-${id}" placeholder="Full name" value="${(prefill && prefill.name) || ''}">
+    <label>Role / Occupation</label>
+    <input type="text" id="personRole-${id}" placeholder="e.g. Electrician" value="${(prefill && prefill.role) || ''}">
+    <label>Employer / Company</label>
+    <input type="text" id="personEmployer-${id}" placeholder="Cartella, subcontractor, member of public..." value="${(prefill && prefill.employer) || ''}">
+    <label>Contact Number</label>
+    <input type="text" id="personContact-${id}" placeholder="Phone" value="${(prefill && prefill.contact) || ''}">
+  `;
+  document.getElementById('personContainer').appendChild(div);
+  div.querySelectorAll('input').forEach(f => f.addEventListener('input', scheduleSave));
+}
+function removePersonRow(id){
+  const el = document.getElementById('person-' + id);
+  if (el) el.remove();
+  renumber('.entry-item', 'personContainer', 'PERSON');
+  scheduleSave();
+}
+
+/* ============ WITNESSES ============ */
+function addWitnessRow(prefill){
+  witnessCount++;
+  const id = witnessCount;
+  const div = document.createElement('div');
+  div.className = 'entry-item';
+  div.id = 'witness-' + id;
+  div.innerHTML = `
+    <div class="entry-head">
+      <h3>WITNESS ${id}</h3>
+      ${id > 1 ? `<button type="button" class="remove-link" onclick="removeWitnessRow(${id})">Remove</button>` : ''}
+    </div>
+    <label>Full Name</label>
+    <input type="text" id="witnessName-${id}" placeholder="Full name" value="${(prefill && prefill.name) || ''}">
+    <label>Contact Number</label>
+    <input type="text" id="witnessContact-${id}" placeholder="Phone" value="${(prefill && prefill.contact) || ''}">
+  `;
+  document.getElementById('witnessContainer').appendChild(div);
+  div.querySelectorAll('input').forEach(f => f.addEventListener('input', scheduleSave));
+}
+function removeWitnessRow(id){
+  const el = document.getElementById('witness-' + id);
+  if (el) el.remove();
+  renumber('#witnessContainer .entry-item', 'witnessContainer', 'WITNESS');
+  scheduleSave();
+}
+
+/* ============ CORRECTIVE ACTIONS ============ */
+function addCorrectiveRow(prefill){
+  correctiveCount++;
+  const id = correctiveCount;
+  const div = document.createElement('div');
+  div.className = 'entry-item';
+  div.id = 'corrective-' + id;
+  div.innerHTML = `
+    <div class="entry-head">
+      <h3>ACTION ${id}</h3>
+      ${id > 1 ? `<button type="button" class="remove-link" onclick="removeCorrectiveRow(${id})">Remove</button>` : ''}
+    </div>
+    <label>Action Required</label>
+    <textarea id="correctiveAction-${id}" placeholder="What needs to be done to prevent recurrence?">${(prefill && prefill.action) || ''}</textarea>
+    <label>Responsible Person</label>
+    <input type="text" id="correctivePerson-${id}" placeholder="Full name" value="${(prefill && prefill.person) || ''}">
+    <label>Due Date</label>
+    <input type="date" id="correctiveDue-${id}" value="${(prefill && prefill.due) || ''}">
+  `;
+  document.getElementById('correctiveContainer').appendChild(div);
+  div.querySelectorAll('input,textarea').forEach(f => f.addEventListener('input', scheduleSave));
+}
+function removeCorrectiveRow(id){
+  const el = document.getElementById('corrective-' + id);
+  if (el) el.remove();
+  renumber('#correctiveContainer .entry-item', 'correctiveContainer', 'ACTION');
+  scheduleSave();
+}
+
+function renumber(selector, containerId, label){
+  const items = document.querySelectorAll('#' + containerId + ' .entry-item');
+  items.forEach((el, idx) => {
+    el.querySelector('h3').textContent = label + ' ' + (idx + 1);
+  });
+}
+
+/* ============ CHOICE HELPERS ============ */
+function getChecked(groupName){
+  return Array.from(document.querySelectorAll(`input[name="${groupName}"]:checked`)).map(i => i.value);
+}
+function getRadio(groupName){
+  const el = document.querySelector(`input[name="${groupName}"]:checked`);
+  return el ? el.value : '';
+}
+function setChecked(groupName, values){
+  if (!values) return;
+  document.querySelectorAll(`input[name="${groupName}"]`).forEach(i => {
+    i.checked = values.includes(i.value);
+  });
+}
+function setRadio(groupName, value){
+  if (!value) return;
+  document.querySelectorAll(`input[name="${groupName}"]`).forEach(i => {
+    i.checked = (i.value === value);
+  });
+}
+
+/* ============ BODY MAP ============ */
+const BODY_SEL = '#D8232A';           // selected fill
+const selectedRegions = new Set();
+
+function updateBodySummary(){
+  const summary = document.getElementById('bodymapSummary');
+  const arr = Array.from(selectedRegions);
+  if(!arr.length){
+    summary.innerHTML = '<span class="none">No areas selected yet — tap the diagram to mark affected areas.</span>';
+    return;
+  }
+  summary.innerHTML = '<div class="chips">' + arr.map(r =>
+    `<span class="chip">${r}</span>`).join('') + '</div>';
+}
+function toggleRegion(el){
+  const name = el.getAttribute('data-region');
+  if(selectedRegions.has(name)){
+    selectedRegions.delete(name);
+    el.removeAttribute('fill');          // falls back to group's base grey
+  }else{
+    selectedRegions.add(name);
+    el.setAttribute('fill', BODY_SEL);
+  }
+  updateBodySummary();
+  scheduleSave();
+}
+function applyRegionFills(){
+  document.querySelectorAll('#bodymapFront .body-region, #bodymapBack .body-region').forEach(el => {
+    if(selectedRegions.has(el.getAttribute('data-region'))){
+      el.setAttribute('fill', BODY_SEL);
+    }else{
+      el.removeAttribute('fill');
+    }
+  });
+}
+function clearBodyMap(){
+  selectedRegions.clear();
+  applyRegionFills();
+  updateBodySummary();
+  scheduleSave();
+}
+['bodymapFront','bodymapBack'].forEach(svgId => {
+  const svg = document.getElementById(svgId);
+  if(!svg) return;
+  svg.addEventListener('click', e => {
+    const r = e.target.closest('.body-region');
+    if(r) toggleRegion(r);
+  });
+});
+
+/* ============ INIT BUTTONS ============ */
+document.getElementById('addPersonBtn').addEventListener('click', () => { addPersonRow(); scheduleSave(); });
+document.getElementById('addWitnessBtn').addEventListener('click', () => { addWitnessRow(); scheduleSave(); });
+document.getElementById('addCorrectiveBtn').addEventListener('click', () => { addCorrectiveRow(); scheduleSave(); });
+
+/* ============ AUTOSAVE / RESTORE ============ */
+const STORAGE_KEY = 'cartella_incident_draft_v1';
+let saveDebounceTimer = null;
+function scheduleSave(){
+  clearTimeout(saveDebounceTimer);
+  saveDebounceTimer = setTimeout(saveDraft, 400);
+}
+
+function val(id){ const el = document.getElementById(id); return el ? el.value : ''; }
+
+function collectState(){
+  const persons = [];
+  document.querySelectorAll('#personContainer .entry-item').forEach(el => {
+    const m = el.id.match(/person-(\d+)/); const i = m ? m[1] : null;
+    persons.push({
+      name: val('personName-' + i),
+      role: val('personRole-' + i),
+      employer: val('personEmployer-' + i),
+      contact: val('personContact-' + i)
+    });
+  });
+
+  const witnesses = [];
+  document.querySelectorAll('#witnessContainer .entry-item').forEach(el => {
+    const m = el.id.match(/witness-(\d+)/); const i = m ? m[1] : null;
+    witnesses.push({
+      name: val('witnessName-' + i),
+      contact: val('witnessContact-' + i)
+    });
+  });
+
+  const corrective = [];
+  document.querySelectorAll('#correctiveContainer .entry-item').forEach(el => {
+    const m = el.id.match(/corrective-(\d+)/); const i = m ? m[1] : null;
+    corrective.push({
+      action: val('correctiveAction-' + i),
+      person: val('correctivePerson-' + i),
+      due: val('correctiveDue-' + i)
+    });
+  });
+
+  return {
+    project: val('projectName'),
+    reportedBy: val('reportedBy'),
+    position: val('position'),
+    dateReported: val('dateReported'),
+    incidentDate: val('incidentDate'),
+    incidentTime: val('incidentTime'),
+    location: val('location'),
+    incidentTypes: getChecked('incidentType'),
+    persons,
+    description: val('description'),
+    activity: val('activity'),
+    equipment: val('equipment'),
+    injuryNature: val('injuryNature'),
+    bodyRegions: Array.from(selectedRegions),
+    bodyPart: val('bodyPart'),
+    treatments: getChecked('treatment'),
+    treatmentDetails: val('treatmentDetails'),
+    witnesses,
+    notifiable: getRadio('notifiable'),
+    whsqNotified: val('whsqNotified'),
+    whsqBy: val('whsqBy'),
+    whsqRef: val('whsqRef'),
+    immediateActions: val('immediateActions'),
+    riskRating: getRadio('riskRating'),
+    corrective,
+    supervisorName: val('supervisorName'),
+    supervisorDate: val('supervisorDate'),
+    mainSig: mainPad && !mainPad.isEmpty() ? mainPad.toData() : null,
+    supSig: supPad && !supPad.isEmpty() ? supPad.toData() : null
+  };
+}
+
+function saveDraft(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(collectState())); }
+  catch(err){ /* storage full/unavailable — submitting still works */ }
+}
+function loadDraft(){
+  try{ const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : null; }
+  catch(err){ return null; }
+}
+function clearSavedDraft(){ try{ localStorage.removeItem(STORAGE_KEY); }catch(err){} }
+
+function setVal(id, v){ const el = document.getElementById(id); if (el) el.value = v || ''; }
+
+function restoreFromDraft(draft){
+  setVal('projectName', draft.project);
+  setVal('reportedBy', draft.reportedBy);
+  setVal('position', draft.position);
+  setVal('dateReported', draft.dateReported);
+  setVal('incidentDate', draft.incidentDate);
+  setVal('incidentTime', draft.incidentTime);
+  setVal('location', draft.location);
+  setChecked('incidentType', draft.incidentTypes);
+  setVal('description', draft.description);
+  setVal('activity', draft.activity);
+  setVal('equipment', draft.equipment);
+  setVal('injuryNature', draft.injuryNature);
+  if(draft.bodyRegions && draft.bodyRegions.length){
+    draft.bodyRegions.forEach(r => selectedRegions.add(r));
+    applyRegionFills();
+  }
+  setVal('bodyPart', draft.bodyPart);
+  setChecked('treatment', draft.treatments);
+  setVal('treatmentDetails', draft.treatmentDetails);
+  setRadio('notifiable', draft.notifiable);
+  setVal('whsqNotified', draft.whsqNotified);
+  setVal('whsqBy', draft.whsqBy);
+  setVal('whsqRef', draft.whsqRef);
+  setVal('immediateActions', draft.immediateActions);
+  setRadio('riskRating', draft.riskRating);
+  setVal('supervisorName', draft.supervisorName);
+  setVal('supervisorDate', draft.supervisorDate);
+
+  if(draft.mainSig && draft.mainSig.length){
+    mainPad.fromData(draft.mainSig);
+    document.getElementById('mainSigPlaceholder').style.display = 'none';
+  }
+  if(draft.supSig && draft.supSig.length){
+    supPad.fromData(draft.supSig);
+    document.getElementById('supSigPlaceholder').style.display = 'none';
+  }
+
+  if(draft.persons && draft.persons.length){ draft.persons.forEach(p => addPersonRow(p)); }
+  else{ addPersonRow(); }
+
+  if(draft.witnesses && draft.witnesses.length){ draft.witnesses.forEach(w => addWitnessRow(w)); }
+  else{ addWitnessRow(); }
+
+  if(draft.corrective && draft.corrective.length){ draft.corrective.forEach(c => addCorrectiveRow(c)); }
+  else{ addCorrectiveRow(); }
+}
+
+/* ============ SETUP ============ */
+mainPad = setupSig('mainSigCanvas', 'mainSigPlaceholder');
+supPad = setupSig('supSigCanvas', 'supSigPlaceholder');
+
+const existingDraft = loadDraft();
+if(existingDraft){
+  restoreFromDraft(existingDraft);
+  showBanner('Restored your unsaved draft from last time.', 'info');
+}else{
+  addPersonRow();
+  addWitnessRow();
+  addCorrectiveRow();
+}
+updateBodySummary();
+
+/* attach save listeners to static fields */
+['projectName','reportedBy','position','incidentTime','location','description','activity',
+ 'equipment','injuryNature','bodyPart','treatmentDetails','whsqNotified','whsqBy','whsqRef',
+ 'immediateActions','supervisorName'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', scheduleSave);
+});
+['dateReported','incidentDate','supervisorDate'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('change', scheduleSave);
+});
+document.querySelectorAll('input[name="incidentType"],input[name="treatment"],input[name="notifiable"],input[name="riskRating"]')
+  .forEach(el => el.addEventListener('change', scheduleSave));
+
+/* keep the download/print filename in sync with project + date */
+document.getElementById('projectName').addEventListener('input', updateDocTitle);
+document.getElementById('incidentDate').addEventListener('change', updateDocTitle);
+document.getElementById('dateReported').addEventListener('change', updateDocTitle);
+updateDocTitle();
+
+/* ============ VALIDATION ============ */
+function clearErrors(){
+  document.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
+}
+function setError(wrapperId){
+  const el = document.getElementById(wrapperId);
+  if (el) el.classList.add('field-error');
+}
+function validate(){
+  clearErrors();
+  let firstBadEl = null;
+
+  const checks = [
+    ['projectName', 'f-project'],
+    ['reportedBy', 'f-reportedBy'],
+    ['dateReported', 'f-dateReported'],
+    ['incidentDate', 'f-incidentDate'],
+    ['location', 'f-location'],
+    ['description', 'f-description']
+  ];
+  checks.forEach(([fieldId, wrapId]) => {
+    const v = (val(fieldId) || '').trim();
+    if (!v){ setError(wrapId); firstBadEl = firstBadEl || document.getElementById(fieldId); }
+  });
+
+  if (getChecked('incidentType').length === 0){
+    setError('f-incidentType');
+    firstBadEl = firstBadEl || document.getElementById('incidentTypeGroup');
+  }
+  if (!getRadio('notifiable')){
+    setError('f-notifiable');
+    firstBadEl = firstBadEl || document.getElementById('notifiableGroup');
+  }
+  if (mainPad.isEmpty()){
+    setError('f-sig');
+    firstBadEl = firstBadEl || document.getElementById('mainSigBox');
+  }
+
+  if (firstBadEl){
+    firstBadEl.scrollIntoView({ behavior:'smooth', block:'center' });
+    if (firstBadEl.focus) firstBadEl.focus();
+    return false;
+  }
+  return true;
+}
+
+/* ============ STATUS BANNER ============ */
+function showBanner(msg, type){
+  const b = document.getElementById('statusBanner');
+  b.textContent = msg;
+  b.className = 'status-banner show ' + type;
+  if (type !== 'saving'){ setTimeout(() => { b.classList.remove('show'); }, 4000); }
+}
+function showOverlay(msg){
+  document.getElementById('overlayText').textContent = msg;
+  document.getElementById('overlay').classList.add('show');
+}
+function hideOverlay(){ document.getElementById('overlay').classList.remove('show'); }
+
+/* ============ FILENAME HELPERS ============ */
+function sanitize(str){
+  return (str || '').trim().replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_');
+}
+function formatDateForFilename(isoDate){
+  if (!isoDate) return '';
+  const [y,m,d] = isoDate.split('-');
+  return `${d}-${m}-${y}`;
+}
+function formatDateForDisplay(isoDate){
+  if (!isoDate) return '';
+  const [y,m,d] = isoDate.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+/* Keep the page/tab title in sync with the project + incident date.
+   The browser's "Save as PDF" (print) dialog uses this title as the default
+   filename, so this is what puts the project and date on the downloaded file. */
+function updateDocTitle(){
+  const project = (document.getElementById('projectName')?.value || '').trim();
+  const dateIso = document.getElementById('incidentDate')?.value
+               || document.getElementById('dateReported')?.value || '';
+  const dateStr = formatDateForFilename(dateIso);
+  let t = 'Incident Report';
+  if (project) t += ' - ' + project;
+  if (dateStr) t += ' - ' + dateStr;
+  document.title = t;
+}
+
+/* ============ SVG -> PNG (for body map in PDF) ============ */
+function svgToPng(svgEl, scale){
+  scale = scale || 3;
+  return new Promise((resolve, reject) => {
+    try{
+      const vb = (svgEl.getAttribute('viewBox') || '0 0 140 360').split(/\s+/).map(Number);
+      const w = vb[2], h = vb[3];
+      const clone = svgEl.cloneNode(true);
+      clone.setAttribute('width', w);
+      clone.setAttribute('height', h);
+      const xml = new XMLSerializer().serializeToString(clone);
+      const src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = w * scale;
+        canvas.height = h * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        try{ resolve({ url: canvas.toDataURL('image/png'), w, h }); }
+        catch(e){ reject(e); }
+      };
+      img.onerror = reject;
+      img.src = src;
+    }catch(e){ reject(e); }
+  });
+}
+
+/* ============ PDF GENERATION ============ */
+async function generatePdfBase64(){
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('p', 'mm', 'a4');
+
+  const project = val('projectName').trim();
+  const dateIso = val('incidentDate');
+  const dateDisp = formatDateForDisplay(dateIso) || dateIso;
+  const titleText = project
+    ? `Incident Report — ${project} — ${dateDisp}`
+    : `Incident Report — ${dateDisp}`;
+  pdf.setProperties({ title: titleText });
+
+  const pageW = 210, pageH = 297, margin = 15;
+  const contentW = pageW - margin * 2;
+  let y = margin;
+
+  const RED = [216,35,42], INK = [26,26,26], MUTED = [85,85,85], LINE = [230,230,230];
+  const logoDataUrl = document.getElementById('brandLogo')?.src || null;
+
+  function addHeader(){
+    pdf.setFillColor(26,26,26);
+    pdf.rect(0, 0, pageW, 24, 'F');
+    if(logoDataUrl){ try{ pdf.addImage(logoDataUrl, 'PNG', margin, 5, 34, 8.8); }catch(e){} }
+    pdf.setTextColor(255,255,255);
+    pdf.setFont('helvetica','normal');
+    pdf.setFontSize(8);
+    pdf.text('p 1300 973 287', pageW - margin, 8, { align:'right' });
+    pdf.text('a PO Box 1076, Lutwyche, QLD 4030', pageW - margin, 12, { align:'right' });
+    pdf.text('e info@cartella.com.au', pageW - margin, 16, { align:'right' });
+    pdf.text('w www.cartella.com.au', pageW - margin, 20, { align:'right' });
+
+    pdf.setFillColor(RED[0],RED[1],RED[2]);
+    pdf.rect(0, 24, pageW, 9, 'F');
+    pdf.setTextColor(255,255,255);
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(12);
+    pdf.text('Incident Report', margin, 30.5);
+
+    pdf.setTextColor(INK[0],INK[1],INK[2]);
+    y = 40;
+  }
+
+  function addFooter(pageNum, totalPages){
+    pdf.setDrawColor(RED[0],RED[1],RED[2]);
+    pdf.setLineWidth(0.6);
+    pdf.line(margin, pageH - 12, pageW - margin, pageH - 12);
+    pdf.setFont('helvetica','normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+    pdf.text('Cartella Services Pty Ltd — Incident Report', margin, pageH - 7);
+    pdf.text('Page ' + pageNum + ' of ' + totalPages, pageW - margin, pageH - 7, { align:'right' });
+  }
+
+  function checkBreak(needed){
+    if(y + needed > pageH - 16){ pdf.addPage(); addHeader(); return true; }
+    return false;
+  }
+
+  function sectionTitle(text){
+    checkBreak(12);
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(10.5);
+    pdf.setTextColor(RED[0],RED[1],RED[2]);
+    pdf.text(text.toUpperCase(), margin, y);
+    pdf.setDrawColor(RED[0],RED[1],RED[2]);
+    pdf.setLineWidth(0.5);
+    pdf.line(margin, y + 1.5, pageW - margin, y + 1.5);
+    pdf.setTextColor(INK[0],INK[1],INK[2]);
+    y += 8;
+  }
+
+  function wrapAndPrint(text, x, maxWidth, size, italic){
+    if(!text) return;
+    pdf.setFont('helvetica', italic ? 'italic' : 'normal');
+    pdf.setFontSize(size);
+    const lines = pdf.splitTextToSize(text, maxWidth);
+    lines.forEach(line => { checkBreak(5.5); pdf.text(line, x, y); y += 5.2; });
+  }
+
+  function labelValue(label, value){
+    checkBreak(7);
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+    pdf.text(label.toUpperCase(), margin, y);
+    y += 4.5;
+    pdf.setFont('helvetica','normal');
+    pdf.setFontSize(11);
+    pdf.setTextColor(INK[0],INK[1],INK[2]);
+    const lines = pdf.splitTextToSize(value || '—', contentW);
+    lines.forEach(line => { checkBreak(5.5); pdf.text(line, margin, y); y += 5.2; });
+    y += 2.5;
+  }
+
+  function labelBlock(label, value){
+    checkBreak(7);
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+    pdf.text(label.toUpperCase(), margin, y);
+    y += 4.8;
+    wrapAndPrint(value && value.trim() ? value : '—', margin, contentW, 10.5, !(value && value.trim()));
+    y += 3;
+  }
+
+  function divider(){
+    pdf.setDrawColor(LINE[0],LINE[1],LINE[2]);
+    pdf.setLineWidth(0.3);
+    checkBreak(4);
+    pdf.line(margin, y - 1, pageW - margin, y - 1);
+    y += 4;
+  }
+
+  function isPadEmpty(pad){ try{ return !pad || pad.isEmpty(); }catch(e){ return true; } }
+
+  // ===== PAGE 1 =====
+  addHeader();
+
+  // REPORT DETAILS
+  sectionTitle('Report details');
+  labelValue('Project / site name', project);
+  labelValue('Report completed by', val('reportedBy').trim());
+  labelValue('Position / role', val('position').trim());
+  labelValue('Date reported', formatDateForDisplay(val('dateReported')));
+
+  // INCIDENT DETAILS
+  sectionTitle('Incident details');
+  labelValue('Date of incident', dateDisp);
+  labelValue('Time of incident', val('incidentTime'));
+  labelValue('Exact location', val('location').trim());
+  labelValue('Type of incident', getChecked('incidentType').join(', '));
+
+  // PEOPLE INVOLVED
+  sectionTitle('People involved');
+  let anyPerson = false;
+  document.querySelectorAll('#personContainer .entry-item').forEach((el, idx) => {
+    const m = el.id.match(/person-(\d+)/); const i = m ? m[1] : null;
+    const name = val('personName-' + i).trim();
+    const role = val('personRole-' + i).trim();
+    const emp = val('personEmployer-' + i).trim();
+    const contact = val('personContact-' + i).trim();
+    if(!name && !role && !emp && !contact) return;
+    anyPerson = true;
+    checkBreak(10);
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(10);
+    pdf.setTextColor(RED[0],RED[1],RED[2]);
+    pdf.text('PERSON ' + (idx + 1), margin, y);
+    pdf.setTextColor(INK[0],INK[1],INK[2]);
+    y += 5.5;
+    wrapAndPrint((name || '(name not entered)') + (role ? '  —  ' + role : ''), margin, contentW, 10.5, false);
+    if(emp) wrapAndPrint('Employer: ' + emp, margin, contentW, 9.5, false);
+    if(contact) wrapAndPrint('Contact: ' + contact, margin, contentW, 9.5, false);
+    y += 2;
+    divider();
+  });
+  if(!anyPerson){
+    wrapAndPrint('No people recorded.', margin, contentW, 9.5, true); y += 4;
+  }
+
+  // WHAT HAPPENED
+  sectionTitle('What happened');
+  labelBlock('Description of incident', val('description'));
+  labelBlock('Task / activity being performed', val('activity'));
+  labelValue('Plant / equipment / substances', val('equipment').trim());
+
+  // INJURY / HARM
+  sectionTitle('Injury / harm details');
+  labelBlock('Nature of injury / illness', val('injuryNature'));
+
+  const regionList = Array.from(selectedRegions);
+  labelValue('Part(s) of body affected', regionList.join(', '));
+
+  // Body map figures (front + back), highlighted to match the on-screen selection.
+  try{
+    const frontSvg = document.getElementById('bodymapFront');
+    const backSvg = document.getElementById('bodymapBack');
+    const [front, back] = await Promise.all([svgToPng(frontSvg, 3), svgToPng(backSvg, 3)]);
+    const figH = 52;                        // mm
+    const figW = figH * (front.w / front.h);
+    checkBreak(figH + 10);
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(8.5);
+    pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+    pdf.text('FRONT', margin + figW / 2, y, { align:'center' });
+    pdf.text('BACK', margin + figW + 12 + figW / 2, y, { align:'center' });
+    pdf.setTextColor(INK[0],INK[1],INK[2]);
+    y += 3;
+    pdf.addImage(front.url, 'PNG', margin, y, figW, figH);
+    pdf.addImage(back.url, 'PNG', margin + figW + 12, y, figW, figH);
+    y += figH + 5;
+  }catch(e){
+    // If rasterisation fails, the text list above still records the areas.
+  }
+
+  if(val('bodyPart').trim()){
+    labelValue('Other / further detail', val('bodyPart').trim());
+  }
+  labelValue('Treatment provided', getChecked('treatment').join(', '));
+  labelBlock('Treatment details', val('treatmentDetails'));
+
+  // WITNESSES
+  sectionTitle('Witnesses');
+  let anyWitness = false;
+  document.querySelectorAll('#witnessContainer .entry-item').forEach(el => {
+    const m = el.id.match(/witness-(\d+)/); const i = m ? m[1] : null;
+    const name = val('witnessName-' + i).trim();
+    const contact = val('witnessContact-' + i).trim();
+    if(!name && !contact) return;
+    anyWitness = true;
+    checkBreak(8);
+    pdf.setFont('helvetica','normal');
+    pdf.setFontSize(10.5);
+    pdf.setTextColor(INK[0],INK[1],INK[2]);
+    pdf.text((name || '(name not entered)') + (contact ? '   —   ' + contact : ''), margin, y + 3);
+    y += 7;
+    divider();
+  });
+  if(!anyWitness){
+    wrapAndPrint('No witnesses recorded.', margin, contentW, 9.5, true); y += 4;
+  }
+
+  // NOTIFIABLE ASSESSMENT
+  sectionTitle('Notifiable incident assessment');
+  labelValue('Notifiable incident?', getRadio('notifiable'));
+  labelValue('Date & time WHSQ notified', val('whsqNotified').trim());
+  labelValue('Notified by', val('whsqBy').trim());
+  labelValue('WHSQ reference number', val('whsqRef').trim());
+
+  // IMMEDIATE ACTIONS & RISK
+  sectionTitle('Immediate actions & risk');
+  labelBlock('Immediate actions taken', val('immediateActions'));
+  labelValue('Risk of recurrence', getRadio('riskRating'));
+
+  // CORRECTIVE ACTIONS
+  sectionTitle('Corrective actions');
+  let anyCorrective = false;
+  document.querySelectorAll('#correctiveContainer .entry-item').forEach((el, idx) => {
+    const m = el.id.match(/corrective-(\d+)/); const i = m ? m[1] : null;
+    const action = val('correctiveAction-' + i).trim();
+    const person = val('correctivePerson-' + i).trim();
+    const due = formatDateForDisplay(val('correctiveDue-' + i));
+    if(!action && !person && !due) return;
+    anyCorrective = true;
+    checkBreak(10);
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(10);
+    pdf.setTextColor(RED[0],RED[1],RED[2]);
+    pdf.text('ACTION ' + (idx + 1), margin, y);
+    pdf.setTextColor(INK[0],INK[1],INK[2]);
+    y += 5.5;
+    wrapAndPrint(action || '(no action entered)', margin, contentW, 10.5, !action);
+    const meta = [person ? 'Responsible: ' + person : '', due ? 'Due: ' + due : ''].filter(Boolean).join('     ');
+    if(meta) wrapAndPrint(meta, margin, contentW, 9.5, false);
+    y += 2;
+    divider();
+  });
+  if(!anyCorrective){
+    wrapAndPrint('No corrective actions recorded.', margin, contentW, 9.5, true); y += 4;
+  }
+
+  // SIGN-OFF
+  sectionTitle('Sign-off');
+  checkBreak(24);
+  pdf.setFont('helvetica','bold');
+  pdf.setFontSize(9.5);
+  pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+  pdf.text('PERSON COMPLETING REPORT', margin, y);
+  y += 3;
+  if(!isPadEmpty(mainPad)){
+    try{ pdf.addImage(mainPad.toDataURL('image/png'), 'PNG', margin, y, 50, 14); }catch(e){}
+    y += 16;
+  }else{
+    pdf.setFont('helvetica','italic'); pdf.setFontSize(9.5);
+    pdf.text('(not signed)', margin, y + 4); y += 10;
+  }
+  pdf.setTextColor(INK[0],INK[1],INK[2]);
+  wrapAndPrint(val('reportedBy').trim(), margin, contentW, 10.5, false);
+  y += 4;
+
+  checkBreak(24);
+  pdf.setFont('helvetica','bold');
+  pdf.setFontSize(9.5);
+  pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+  pdf.text('REVIEWED BY (SUPERVISOR / MANAGER)', margin, y);
+  y += 3;
+  if(!isPadEmpty(supPad)){
+    try{ pdf.addImage(supPad.toDataURL('image/png'), 'PNG', margin, y, 50, 14); }catch(e){}
+    y += 16;
+  }else{
+    pdf.setFont('helvetica','italic'); pdf.setFontSize(9.5);
+    pdf.text('(not signed)', margin, y + 4); y += 10;
+  }
+  pdf.setTextColor(INK[0],INK[1],INK[2]);
+  const supName = val('supervisorName').trim();
+  const supDate = formatDateForDisplay(val('supervisorDate'));
+  wrapAndPrint([supName, supDate ? 'Date: ' + supDate : ''].filter(Boolean).join('     '), margin, contentW, 10.5, false);
+
+  // FOOTERS
+  const totalPages = pdf.internal.getNumberOfPages();
+  for(let p = 1; p <= totalPages; p++){ pdf.setPage(p); addFooter(p, totalPages); }
+
+  const dataUri = pdf.output('datauristring');
+  return dataUri.split(',')[1];
+}
+
+document.getElementById('printBtn').addEventListener('click', () => window.print());
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (confirm('Clear the whole form and start again? This will also delete your saved draft.')){
+    clearSavedDraft();
+    window.location.reload();
+  }
+});
+
+/* ============ SUBMIT ============ */
+document.getElementById('submitBtn').addEventListener('click', async () => {
+  if (!validate()) return;
+
+  const submitBtn = document.getElementById('submitBtn');
+  submitBtn.disabled = true;
+  showOverlay('Generating PDF...');
+
+  try {
+    const project = sanitize(val('projectName'));
+    const dateIso = val('incidentDate');
+    const dateStr = formatDateForFilename(dateIso);
+    const reportedBy = sanitize(val('reportedBy')) || 'Unnamed';
+
+    const filename = `Incident_${project}_${dateStr}_${reportedBy}.pdf`;
+    const pdfBase64 = await generatePdfBase64();
+
+    showOverlay('Saving to Drive...');
+    await submitViaHiddenForm(filename, pdfBase64);
+    hideOverlay();
+    showBanner('Incident report saved successfully.', 'success');
+    clearSavedDraft();
+    setTimeout(() => { window.location.reload(); }, 2000);
+  } catch (err){
+    hideOverlay();
+    showBanner('Error saving: ' + err.message, 'error');
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+function submitViaHiddenForm(filename, pdfBase64){
+  return new Promise((resolve, reject) => {
+    try {
+      let iframe = document.querySelector('iframe[name="upload-target"]');
+      if (!iframe){
+        iframe = document.createElement('iframe');
+        iframe.name = 'upload-target';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+      }
+
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = SCRIPT_URL;
+      form.target = 'upload-target';
+      form.style.display = 'none';
+
+      const fFilename = document.createElement('input');
+      fFilename.name = 'filename';
+      fFilename.value = filename;
+      form.appendChild(fFilename);
+
+      const fPdf = document.createElement('input');
+      fPdf.name = 'pdfBase64';
+      fPdf.value = pdfBase64;
+      form.appendChild(fPdf);
+
+      document.body.appendChild(form);
+
+      const onLoad = () => {
+        iframe.removeEventListener('load', onLoad);
+        form.remove();
+        resolve();
+      };
+      iframe.addEventListener('load', onLoad);
+      form.submit();
+
+      setTimeout(() => {
+        iframe.removeEventListener('load', onLoad);
+        resolve();
+      }, 15000);
+    } catch (err){
+      reject(err);
+    }
+  });
+}
+</script>
+
+</body>
+</html>
