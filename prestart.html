@@ -520,7 +520,7 @@ async function generatePdfBase64(){
     : `Pre-Start Meeting Checklist — ${dateVal}`;
   pdf.setProperties({ title: titleText });
   const pageWidth = 210, pageHeight = 297;
-  const captureOpts = { scale:1, useCORS:true, backgroundColor:'#ffffff', width:640, windowWidth:640 };
+  const captureOpts = { scale:2, useCORS:true, backgroundColor:'#ffffff', width:640, windowWidth:640 };
   let y = 0;
   let placedAny = false;
 
@@ -533,7 +533,7 @@ async function generatePdfBase64(){
       pdf.addPage();
       y = 0;
     }
-    const imgData = canvas.toDataURL('image/jpeg', 0.7);
+    const imgData = canvas.toDataURL('image/jpeg', 0.85);
     pdf.addImage(imgData, 'JPEG', 0, y, imgWidth, imgHeight);
     y += imgHeight;
     placedAny = true;
