@@ -103,6 +103,7 @@
   }
   .section-toggle input[type=checkbox]{width:16px; height:16px; accent-color:var(--red); cursor:pointer;}
   .excluded-note{display:none;}
+  .print-value{display:none;}
   .photo-remove:hover{background:var(--red);}
 
   .section-subtitle{font-size:12px; color:var(--gray-text); margin:-8px 0 14px; font-weight:500;}
@@ -292,29 +293,28 @@
     .field input, .field select{padding:4px 6px; font-size:9.5px; border-color:#bbb;}
 
     .table-scroll{overflow:visible; border:1px solid #999;}
-    table{min-width:0; width:100%; table-layout:fixed; page-break-inside:auto; break-inside:auto; border-collapse:collapse;}
+    table{width:auto; max-width:100%; table-layout:auto; page-break-inside:auto; break-inside:auto; border-collapse:collapse;}
     /* Repeat the header row at the top of every new page the table spans, and keep each
        data row intact rather than letting a page break slice through the middle of one. */
     thead{display:table-header-group;}
     tbody{display:table-row-group;}
     tbody tr{page-break-inside:avoid; break-inside:avoid;}
     thead th{
-      white-space:normal; font-size:8px; padding:4px 3px; position:static;
+      white-space:nowrap; font-size:9px; padding:4px 6px; position:static;
       background:#eee !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;
       border-bottom:1.5px solid var(--red);
     }
-    tbody td{padding:3px 3px;}
-    td input, td select{
-      padding:2px 3px; font-size:8.5px; min-width:0; border-color:#bbb;
+    tbody td{padding:3px 5px;}
+    /* Form controls are swapped out for plain text at print time (see preparePrintValues in the
+       script) — this sidesteps every box/padding/spinner/dropdown-arrow sizing inconsistency that
+       caused values to get clipped, since a table cell of auto-layout text can never truncate. */
+    td input, td select, .ir-group input{display:none !important;}
+    .print-value{
+      display:inline-block; font-family:inherit; font-size:9.5px; white-space:nowrap; color:var(--black);
     }
-    td select{
-      width:100%; max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-    }
-    td.desc input{min-width:0;}
-    td.id input{min-width:0;}
-    .ir-group{gap:1.5px;}
-    .ir-group input{width:24px !important; padding:2px 1px !important; font-size:7.5px !important;}
-    .badge{font-size:7.5px; padding:2px 6px; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+    .ir-group{gap:5px;}
+    .ir-group .print-value{min-width:14px;}
+    .badge{font-size:8px; padding:2px 6px; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
     .badge .dot{width:5px; height:5px;}
 
     /* hide the delete-row column entirely when printing */
@@ -325,7 +325,7 @@
     footer.legend{font-size:9px;}
     footer.legend p{margin-bottom:4px;}
     .disclaimer{font-size:8px; padding:6px 8px;}
-    .foot-note{font-size:8px; margin-top:8px;}
+    .foot-note{font-size:8px; margin-top:8px; color:#555 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
   }
 </style>
 </head>
@@ -445,11 +445,11 @@
       <div class="table-scroll">
         <table id="submainTable">
           <colgroup>
-            <col style="width:3%"><col style="width:8%"><col style="width:4%"><col style="width:4%">
+            <col style="width:3%"><col style="width:7%"><col style="width:4%"><col style="width:4%">
             <col style="width:4%"><col style="width:4%"><col style="width:4%"><col style="width:5%">
-            <col style="width:4%"><col style="width:6%"><col style="width:10%">
-            <col style="width:6%"><col style="width:6%"><col style="width:5%"><col style="width:6%"><col style="width:6%">
-            <col style="width:4%"><col style="width:4%"><col style="width:6%"><col style="width:1%">
+            <col style="width:4%"><col style="width:6%"><col style="width:9%">
+            <col style="width:6%"><col style="width:5%"><col style="width:5%"><col style="width:6%"><col style="width:5%"><col style="width:5%">
+            <col style="width:4%"><col style="width:4%"><col style="width:5%"><col style="width:1%">
           </colgroup>
           <thead>
             <tr>
@@ -468,6 +468,7 @@
               <th class="th-cont">Ohms (&Omega;)</th>
               <th>Zs (&Omega;)</th>
               <th>Polarity</th>
+              <th>Correct Connections</th>
               <th>Phase sequence</th>
               <th>RCD trip 1&times; (ms)</th>
               <th>RCD trip 5&times; (ms)</th>
@@ -494,11 +495,11 @@
     <div class="table-scroll">
       <table id="circuitTable">
         <colgroup>
-          <col style="width:3%"><col style="width:8%"><col style="width:4%"><col style="width:4%">
+          <col style="width:3%"><col style="width:7%"><col style="width:4%"><col style="width:4%">
           <col style="width:4%"><col style="width:4%"><col style="width:4%"><col style="width:5%">
-          <col style="width:4%"><col style="width:6%"><col style="width:10%">
-          <col style="width:6%"><col style="width:6%"><col style="width:5%"><col style="width:6%"><col style="width:6%">
-          <col style="width:4%"><col style="width:4%"><col style="width:6%"><col style="width:1%">
+          <col style="width:4%"><col style="width:6%"><col style="width:9%">
+          <col style="width:6%"><col style="width:5%"><col style="width:5%"><col style="width:6%"><col style="width:5%"><col style="width:5%">
+          <col style="width:4%"><col style="width:4%"><col style="width:5%"><col style="width:1%">
         </colgroup>
         <thead>
           <tr>
@@ -517,6 +518,7 @@
             <th class="th-cont">Ohms (&Omega;)</th>
               <th>Zs (&Omega;)</th>
             <th>Polarity</th>
+              <th>Correct Connections</th>
             <th>Phase sequence</th>
             <th>RCD trip 1&times; (ms)</th>
             <th>RCD trip 5&times; (ms)</th>
@@ -753,6 +755,64 @@ window.addEventListener('afterprint', () => {
   });
 });
 
+// Print rendering: swap every input/select in the data tables for plain text (a table cell of
+// auto-layout text can never truncate the way a fixed-width form control can), then — as a safety
+// net for rows with a lot of long content — uniformly scale any table that's still wider than the
+// printable page down to fit, rather than letting it run off the edge or clip anything.
+const PRINT_TABLE_IDS = ['circuitTable', 'submainTable', 'riskTable', 'inspectionTable'];
+
+function preparePrintValues(){
+  PRINT_TABLE_IDS.forEach(id => {
+    const table = document.getElementById(id);
+    if (!table) return;
+    table.querySelectorAll('td input:not([type=checkbox]), td select').forEach(el => {
+      let span = el.nextElementSibling;
+      if (!span || !span.classList.contains('print-value')){
+        span = document.createElement('span');
+        span.className = 'print-value';
+        el.insertAdjacentElement('afterend', span);
+      }
+      span.textContent = el.tagName === 'SELECT'
+        ? (el.selectedOptions[0] ? el.selectedOptions[0].text : '—')
+        : (el.value || '—');
+    });
+  });
+}
+
+function scalePrintTablesToFit(){
+  const pageWidthPx = 400 * 3.78; // ~A3 landscape usable width (400mm) at 96dpi
+  PRINT_TABLE_IDS.forEach(id => {
+    const table = document.getElementById(id);
+    if (!table) return;
+    table.style.transform = 'none';
+    const wrap = table.closest('.table-scroll') || table.parentElement;
+    if (wrap) wrap.style.height = '';
+    const naturalWidth = table.scrollWidth;
+    if (naturalWidth > pageWidthPx){
+      const scale = pageWidthPx / naturalWidth;
+      table.style.transformOrigin = 'top left';
+      table.style.transform = `scale(${scale})`;
+      if (wrap) wrap.style.height = (table.scrollHeight * scale) + 'px';
+    }
+  });
+}
+
+function resetPrintTableScale(){
+  PRINT_TABLE_IDS.forEach(id => {
+    const table = document.getElementById(id);
+    if (!table) return;
+    table.style.transform = 'none';
+    const wrap = table.closest('.table-scroll') || table.parentElement;
+    if (wrap) wrap.style.height = '';
+  });
+}
+
+window.addEventListener('beforeprint', () => {
+  preparePrintValues();
+  requestAnimationFrame(scalePrintTablesToFit);
+});
+window.addEventListener('afterprint', resetPrintTableScale);
+
 /* ---------- RISK ASSESSMENT ---------- */
 const RISK_LEVELS = ['', 'Low', 'Medium', 'High'];
 let riskRowCount = 0;
@@ -873,7 +933,7 @@ const HEADER_FIELD_IDS = ['site','descJob','testDate','tester','licence','instru
 const ROW_FIELD_MAP = {
   circuit:'f-circuit', desc:'f-desc', csaA:'f-csaA', setsA:'f-setsA', csaC:'f-csaC', setsC:'f-setsC',
   len:'f-len', dev:'f-dev', rating:'f-rating', phase:'f-phase', irL1:'f-ir-l1', irL2:'f-ir-l2', irL3:'f-ir-l3', irN:'f-ir-n', method:'f-method',
-  r1r2:'f-r1r2', zs:'f-zs', polarity:'f-polarity', phaseseq:'f-phaseseq', t1:'f-t1', t5:'f-t5'
+  r1r2:'f-r1r2', zs:'f-zs', polarity:'f-polarity', connections:'f-connections', phaseseq:'f-phaseseq', t1:'f-t1', t5:'f-t5'
 };
 let storageAvailable = true;
 try {
@@ -1050,6 +1110,11 @@ function addRow(prefill={}, targetTbody=tbody, extraClass=''){
           <option value="correct" ${prefill.polarity==='correct'?'selected':''}>Pass</option>
           <option value="incorrect" ${prefill.polarity==='incorrect'?'selected':''}>Fail</option>
         </select></td>
+    <td><select class="f-connections">
+          <option value="" ${!prefill.connections?'selected':''}>—</option>
+          <option value="correct" ${prefill.connections==='correct'?'selected':''}>Pass</option>
+          <option value="incorrect" ${prefill.connections==='incorrect'?'selected':''}>Fail</option>
+        </select></td>
     <td><select class="f-phaseseq">
           <option value="" ${!prefill.phaseseq?'selected':''}>—</option>
           <option value="cw" ${prefill.phaseseq==='cw'?'selected':''}>&#8635; CW</option>
@@ -1063,7 +1128,7 @@ function addRow(prefill={}, targetTbody=tbody, extraClass=''){
   `;
   const detailTr = document.createElement('tr');
   detailTr.className = 'detail-row hidden';
-  detailTr.innerHTML = `<td colspan="20"><div class="detail-grid"></div></td>`;
+  detailTr.innerHTML = `<td colspan="21"><div class="detail-grid"></div></td>`;
 
   targetTbody.appendChild(tr);
   targetTbody.appendChild(detailTr);
@@ -1096,6 +1161,7 @@ function evaluateRow(tr, detailTr){
   const rating = parseFloat(g('.f-rating').value);
   const phase = g('.f-phase').value; // '1' or '3'
   const polarity = g('.f-polarity').value; // '', 'correct', 'incorrect'
+  const connections = g('.f-connections').value; // '', 'correct', 'incorrect'
   const phaseSeq = g('.f-phaseseq').value; // '', 'cw', 'ccw', 'na'
   const irL1El = g('.f-ir-l1'), irL2El = g('.f-ir-l2'), irL3El = g('.f-ir-l3'), irNEl = g('.f-ir-n');
   const is3Phase = phase === '3';
@@ -1126,6 +1192,7 @@ function evaluateRow(tr, detailTr){
     && !isNaN(measuredCont)
     && !isNaN(len) && len > 0
     && polarity !== ''
+    && connections !== ''
     && (!hasRCD || (!isNaN(t1) && !isNaN(t5)))
     && (phase !== '3' || (phaseSeq !== '' ));
 
@@ -1296,6 +1363,15 @@ function evaluateRow(tr, detailTr){
     if (polarityResult === 'FAIL'){ hasFail = true; notes.push(['fail', `Polarity check recorded as incorrect — active, neutral and earth connections must be re-verified before energising.`]); }
   }
 
+  // Correct connections — AS/NZS 3000 Clause 8.3.8: confirms conductors are connected to the
+  // correct terminals/points for the circuit as designed (distinct from polarity, which only
+  // checks active/neutral orientation).
+  let connectionsResult = null;
+  if (connections){
+    connectionsResult = connections === 'correct' ? 'PASS' : 'FAIL';
+    if (connectionsResult === 'FAIL'){ hasFail = true; notes.push(['fail', `Correct connections check recorded as incorrect — verify conductors are connected to the correct terminals/points (AS/NZS 3000 Cl 8.3.8) before energising.`]); }
+  }
+
   // Phase sequence (3-phase circuits only)
   let phaseSeqResult = null;
   if (phase === '3' && phaseSeq && phaseSeq !== 'na'){
@@ -1345,6 +1421,7 @@ function evaluateRow(tr, detailTr){
       : '—'],
     ['RCD trip 1× / 5×', hasRCD ? `${!isNaN(t1)?t1+'ms→'+rcd1Result:'—'} / ${!isNaN(t5)?t5+'ms→'+rcd5Result:'—'}` : 'No RCD on this circuit'],
     ['Polarity', polarityResult ? polarityResult : 'Not recorded'],
+    ['Correct connections (Cl 8.3.8)', connectionsResult ? connectionsResult : 'Not recorded'],
     ['Phase sequence', phase === '3' ? (phaseSeqResult ? `${phaseSeqResult} (${phaseSeq==='cw'?'↻ CW':'↺ CCW'})` : (phaseSeq === 'na' ? 'N/A' : 'Not recorded')) : 'N/A (single-phase)'],
   ];
   if (phase === '3'){
@@ -1455,7 +1532,7 @@ document.getElementById('clearBtn').addEventListener('click', () => {
 });
 
 document.getElementById('csvBtn').addEventListener('click', () => {
-  const headers = ['Section','Circuit','Description','Active csa','Active sets','Earth csa','Earth sets','Length (m)','Device','Rating','Phase','RCD mA','Insul R L1 (MΩ)','Insul R L2 (MΩ)','Insul R L3 (MΩ)','Insul R N (MΩ)','Continuity method','R1+R2 or R2 (Ω)','Measured Zs (Ω)','RCD t1 (ms)','RCD t5 (ms)','Polarity','Phase Sequence','Result'];
+  const headers = ['Section','Circuit','Description','Active csa','Active sets','Earth csa','Earth sets','Length (m)','Device','Rating','Phase','RCD mA','Insul R L1 (MΩ)','Insul R L2 (MΩ)','Insul R L3 (MΩ)','Insul R N (MΩ)','Continuity method','R1+R2 or R2 (Ω)','Measured Zs (Ω)','RCD t1 (ms)','RCD t5 (ms)','Polarity','Correct Connections','Phase Sequence','Result'];
   const lines = [headers.join(',')];
   const polarityLabel = v => v === 'correct' ? 'Pass' : v === 'incorrect' ? 'Fail' : '';
   const phaseSeqLabel = v => v === 'cw' ? 'Pass (CW)' : v === 'ccw' ? 'Fail (CCW)' : v === 'na' ? 'N/A' : '';
@@ -1465,7 +1542,7 @@ document.getElementById('csvBtn').addEventListener('click', () => {
       const g = cls => tr.querySelector(cls).value;
       const result = tr.querySelector('.badge').textContent.trim();
       const devMeta = DEVICE_META[g('.f-dev')] || {};
-      lines.push([label,g('.f-circuit'),g('.f-desc'),g('.f-csaA'),g('.f-setsA'),g('.f-csaC'),g('.f-setsC'),g('.f-len'),g('.f-dev'),g('.f-rating'),g('.f-phase')+'φ',devMeta.rcd ?? 'None',g('.f-ir-l1'),g('.f-ir-l2'),g('.f-ir-l3'),g('.f-ir-n'),g('.f-method'),g('.f-r1r2'),g('.f-zs'),g('.f-t1'),g('.f-t5'),polarityLabel(g('.f-polarity')),phaseSeqLabel(g('.f-phaseseq')),result]
+      lines.push([label,g('.f-circuit'),g('.f-desc'),g('.f-csaA'),g('.f-setsA'),g('.f-csaC'),g('.f-setsC'),g('.f-len'),g('.f-dev'),g('.f-rating'),g('.f-phase')+'φ',devMeta.rcd ?? 'None',g('.f-ir-l1'),g('.f-ir-l2'),g('.f-ir-l3'),g('.f-ir-n'),g('.f-method'),g('.f-r1r2'),g('.f-zs'),g('.f-t1'),g('.f-t5'),polarityLabel(g('.f-polarity')),polarityLabel(g('.f-connections')),phaseSeqLabel(g('.f-phaseseq')),result]
         .map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(','));
     });
   };
