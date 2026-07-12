@@ -597,6 +597,7 @@ document.getElementById('submit-btn').addEventListener('click', async () => {
     hideOverlay();
     showBanner('Prestart checklist saved successfully.', 'success');
     clearSavedDraft();
+    setTimeout(() => { window.location.reload(); }, 2000);
   }catch(err){
     hideOverlay();
     showBanner(`Couldn't reach Drive: ${err.message || err}`, 'error');
