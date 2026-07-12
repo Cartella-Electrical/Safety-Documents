@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Toolbox Meeting - Cartella</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/signature_pad/4.1.7/signature_pad.umd.min.js"></script>
 <style>
@@ -681,12 +680,11 @@ function formatDateForDisplay(isoDate){
    with what's on screen.
 */
 async function generatePdfBase64(){
-  document.body.classList.add('capturing');
-
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF('p', 'mm', 'a4');
 
   const project = document.getElementById('projectName').value.trim();
+  const conductedBy = document.getElementById('conductedBy').value.trim();
   const dateIso = document.getElementById('meetingDate').value;
   const dateDisp = formatDateForDisplay(dateIso) || dateIso;
   const titleText = project
@@ -694,80 +692,208 @@ async function generatePdfBase64(){
     : `Toolbox Meeting — ${dateDisp}`;
   pdf.setProperties({ title: titleText });
 
-  const pageWidth = 210, pageHeight = 297;
-  const captureOpts = { scale:2, useCORS:true, backgroundColor:'#ffffff', width:640, windowWidth:640 };
-  let y = 0;
-  let placedAny = false;
+  const pageW = 210, pageH = 297, margin = 15;
+  const contentW = pageW - margin * 2;
+  let y = margin;
 
-  async function addBlock(el){
-    if (!el) return;
-    const canvas = await html2canvas(el, captureOpts);
-    const imgWidth = pageWidth;
-    const imgHeight = canvas.height * imgWidth / canvas.width;
+  const RED = [216,35,42], INK = [26,26,26], MUTED = [85,85,85], LINE = [230,230,230];
 
-    if (imgHeight > pageHeight){
-      // Safety net: if a single block is still taller than one page (e.g. a
-      // very long discussion note), slice it into page-height chunks
-      // instead of letting the excess silently run off the bottom.
-      const pxPerMm = canvas.width / imgWidth;
-      const chunkHeightPx = Math.floor(pageHeight * pxPerMm);
-      let offset = 0;
-      while (offset < canvas.height){
-        if (placedAny){ pdf.addPage(); y = 0; }
-        const sliceHeightPx = Math.min(chunkHeightPx, canvas.height - offset);
-        const sliceCanvas = document.createElement('canvas');
-        sliceCanvas.width = canvas.width;
-        sliceCanvas.height = sliceHeightPx;
-        sliceCanvas.getContext('2d').drawImage(
-          canvas, 0, offset, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx
-        );
-        const sliceImgHeight = sliceHeightPx * imgWidth / canvas.width;
-        pdf.addImage(sliceCanvas.toDataURL('image/jpeg', 0.85), 'JPEG', 0, 0, imgWidth, sliceImgHeight);
-        y = sliceImgHeight;
-        placedAny = true;
-        offset += chunkHeightPx;
-      }
-      return;
+  const logoDataUrl = document.getElementById('brandLogo')?.src || null;
+
+  function addHeader(){
+    pdf.setFillColor(26,26,26);
+    pdf.rect(0, 0, pageW, 24, 'F');
+    if(logoDataUrl){
+      try{ pdf.addImage(logoDataUrl, 'PNG', margin, 5, 34, 8.8); }catch(e){}
     }
+    pdf.setTextColor(255,255,255);
+    pdf.setFont('helvetica','normal');
+    pdf.setFontSize(8);
+    pdf.text('p 1300 973 287', pageW - margin, 8, { align:'right' });
+    pdf.text('a PO Box 1076, Lutwyche, QLD 4030', pageW - margin, 12, { align:'right' });
+    pdf.text('e info@cartella.com.au', pageW - margin, 16, { align:'right' });
+    pdf.text('w www.cartella.com.au', pageW - margin, 20, { align:'right' });
 
-    if (placedAny && y + imgHeight > pageHeight){
+    pdf.setFillColor(RED[0],RED[1],RED[2]);
+    pdf.rect(0, 24, pageW, 9, 'F');
+    pdf.setTextColor(255,255,255);
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(12);
+    pdf.text('Toolbox Meeting', margin, 30.5);
+
+    pdf.setTextColor(INK[0],INK[1],INK[2]);
+    y = 40;
+  }
+
+  function addFooter(pageNum, totalPages){
+    pdf.setDrawColor(RED[0],RED[1],RED[2]);
+    pdf.setLineWidth(0.6);
+    pdf.line(margin, pageH - 12, pageW - margin, pageH - 12);
+    pdf.setFont('helvetica','normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+    pdf.text('Cartella Services Pty Ltd — Toolbox Talk', margin, pageH - 7);
+    pdf.text('Page ' + pageNum + ' of ' + totalPages, pageW - margin, pageH - 7, { align:'right' });
+  }
+
+  function checkBreak(needed){
+    if(y + needed > pageH - 16){
       pdf.addPage();
-      y = 0;
+      addHeader();
+      return true;
     }
-    const imgData = canvas.toDataURL('image/jpeg', 0.85);
-    pdf.addImage(imgData, 'JPEG', 0, y, imgWidth, imgHeight);
-    y += imgHeight;
-    placedAny = true;
+    return false;
   }
 
-  await addBlock(document.querySelector('header.brand'));
-  await addBlock(document.querySelector('.titlebar'));
-
-  // Meeting Details — small and fixed in size, safe as a single block
-  const detailsCard = document.querySelectorAll('.wrap > .card')[0];
-  await addBlock(detailsCard);
-
-  // Agenda Items — capture the header once, then each item individually.
-  // Splitting per-item (rather than capturing the whole card as one image)
-  // means a long list paginates correctly instead of getting clipped.
-  const agendaCard = document.getElementById('agendaContainer').closest('.card');
-  await addBlock(agendaCard.querySelector('.section-title'));
-  const agendaEls = agendaCard.querySelectorAll('.agenda-item');
-  for (const item of agendaEls){
-    await addBlock(item);
+  function sectionTitle(text){
+    checkBreak(12);
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(10.5);
+    pdf.setTextColor(RED[0],RED[1],RED[2]);
+    pdf.text(text.toUpperCase(), margin, y);
+    pdf.setDrawColor(RED[0],RED[1],RED[2]);
+    pdf.setLineWidth(0.5);
+    pdf.line(margin, y + 1.5, pageW - margin, y + 1.5);
+    pdf.setTextColor(INK[0],INK[1],INK[2]);
+    y += 8;
   }
 
-  // Workers Present — same per-row approach. This is what was causing
-  // worker rows (and their signatures) to be cut off on the last page,
-  // since the whole 8-row card was taller than a single A4 page.
-  const workerCard = document.getElementById('workerContainer').closest('.card');
-  await addBlock(workerCard.querySelector('.section-title'));
-  const workerEls = workerCard.querySelectorAll('.worker-row');
-  for (const row of workerEls){
-    await addBlock(row);
+  function wrapAndPrint(text, x, maxWidth, size, italic){
+    if(!text) return;
+    pdf.setFont('helvetica', italic ? 'italic' : 'normal');
+    pdf.setFontSize(size);
+    const lines = pdf.splitTextToSize(text, maxWidth);
+    lines.forEach(line => {
+      checkBreak(5.5);
+      pdf.text(line, x, y);
+      y += 5.2;
+    });
   }
 
-  document.body.classList.remove('capturing');
+  function labelValue(label, value){
+    checkBreak(7);
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+    pdf.text(label.toUpperCase(), margin, y);
+    y += 4.5;
+    pdf.setFont('helvetica','normal');
+    pdf.setFontSize(11);
+    pdf.setTextColor(INK[0],INK[1],INK[2]);
+    pdf.text(value || '—', margin, y);
+    y += 7;
+  }
+
+  function isPadEmpty(pad){
+    try{ return !pad || pad.isEmpty(); }catch(e){ return true; }
+  }
+
+  // ===== PAGE 1 HEADER =====
+  addHeader();
+
+  // ===== MEETING DETAILS =====
+  sectionTitle('Meeting details');
+  labelValue('Project name', project);
+  labelValue('Meeting conducted by', conductedBy);
+  labelValue('Meeting date', dateDisp);
+
+  checkBreak(20);
+  pdf.setFont('helvetica','bold');
+  pdf.setFontSize(9.5);
+  pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+  pdf.text('SIGNATURE (CONDUCTED BY)', margin, y);
+  y += 3;
+  if(!isPadEmpty(mainPad)){
+    try{ pdf.addImage(mainPad.toDataURL('image/png'), 'PNG', margin, y, 50, 14); }catch(e){}
+    y += 17;
+  }else{
+    pdf.setFont('helvetica','italic');
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+    pdf.text('(not signed)', margin, y + 4);
+    y += 10;
+  }
+  pdf.setTextColor(INK[0],INK[1],INK[2]);
+  y += 4;
+
+  // ===== AGENDA ITEMS =====
+  sectionTitle('Agenda items');
+  document.querySelectorAll('.agenda-item').forEach((el, idx) => {
+    const topic = el.querySelector('input[type=text]')?.value.trim() || '';
+    const text = el.querySelector('textarea')?.value.trim() || '';
+
+    checkBreak(11);
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(10);
+    pdf.setTextColor(RED[0],RED[1],RED[2]);
+    const heading = 'AGENDA ITEM ' + (idx + 1) + (topic ? ':  ' + topic : '');
+    const headingLines = pdf.splitTextToSize(heading, contentW);
+    headingLines.forEach(hl => {
+      checkBreak(5.5);
+      pdf.text(hl, margin, y);
+      y += 5.2;
+    });
+    pdf.setTextColor(INK[0],INK[1],INK[2]);
+    y += 0.5;
+
+    wrapAndPrint(text || '(no notes entered)', margin, contentW, 9.5, !text);
+    y += 4;
+
+    pdf.setDrawColor(LINE[0],LINE[1],LINE[2]);
+    pdf.setLineWidth(0.3);
+    checkBreak(4);
+    pdf.line(margin, y - 3, pageW - margin, y - 3);
+  });
+
+  // ===== WORKERS PRESENT =====
+  sectionTitle('Workers present');
+  let anyWorker = false;
+  document.querySelectorAll('.worker-row').forEach(row => {
+    const name = row.querySelector('input[type=text]')?.value.trim() || '';
+    const idMatch = row.id.match(/worker-(\d+)/);
+    const wid = idMatch ? idMatch[1] : null;
+    const pad = wid ? workerPads[wid] : null;
+    const hasSig = !isPadEmpty(pad);
+    if(!name && !hasSig) return;
+    anyWorker = true;
+
+    checkBreak(13);
+    pdf.setFont('helvetica','normal');
+    pdf.setFontSize(10);
+    pdf.setTextColor(INK[0],INK[1],INK[2]);
+    pdf.text(name || '(name not entered)', margin, y + 3);
+    if(hasSig){
+      try{ pdf.addImage(pad.toDataURL('image/png'), 'PNG', margin + 90, y - 3, 42, 10); }catch(e){}
+    }else{
+      pdf.setFont('helvetica','italic');
+      pdf.setFontSize(8.5);
+      pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+      pdf.text('(not signed)', margin + 90, y + 3);
+      pdf.setTextColor(INK[0],INK[1],INK[2]);
+    }
+    y += 7;
+    pdf.setDrawColor(LINE[0],LINE[1],LINE[2]);
+    pdf.setLineWidth(0.3);
+    pdf.line(margin, y, pageW - margin, y);
+    y += 5;
+  });
+  if(!anyWorker){
+    checkBreak(8);
+    pdf.setFont('helvetica','italic');
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+    pdf.text('No workers recorded.', margin, y + 3);
+    pdf.setTextColor(INK[0],INK[1],INK[2]);
+    y += 8;
+  }
+
+  // ===== FOOTERS =====
+  const totalPages = pdf.internal.getNumberOfPages();
+  for(let p = 1; p <= totalPages; p++){
+    pdf.setPage(p);
+    addFooter(p, totalPages);
+  }
+
   const dataUri = pdf.output('datauristring');
   return dataUri.split(',')[1];
 }
