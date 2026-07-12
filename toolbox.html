@@ -200,6 +200,20 @@
   .submit-btn:active{background:#c81a1f;}
   .submit-btn:disabled{background:#e0a2a4;box-shadow:none;}
 
+  .btn-secondary{
+    width:100%;
+    padding:14px;
+    background:#fff;
+    color:var(--gray-text);
+    border:1px solid #ccc;
+    font-weight:700;
+    font-size:14px;
+    border-radius:9px;
+    cursor:pointer;
+    margin-top:10px;
+  }
+  .btn-secondary:active{background:#f5f5f5;}
+
   .status-banner{
     position:fixed;top:0;left:0;right:0;
     padding:14px 16px;
@@ -241,6 +255,7 @@
   .capturing .remove-link,
   .capturing .btn-clear,
   .capturing .submit-btn,
+  .capturing .btn-secondary,
   .capturing .foot-note,
   .capturing .status-banner,
   .capturing .sig-placeholder{
@@ -249,6 +264,10 @@
   .capturing .sig-box,
   .capturing .worker-mini-sig{
     border:1px solid var(--gray-line);
+  }
+
+  @media print{
+    .add-btn,.remove-link,.btn-clear,.submit-btn,.btn-secondary,.foot-note,.status-banner,.overlay{display:none !important;}
   }
 </style>
 </head>
@@ -316,6 +335,8 @@
   </div>
 
   <button type="button" class="submit-btn" id="submitBtn">Submit Toolbox Talk</button>
+  <button type="button" class="btn-secondary" id="printBtn">Save / Print as PDF</button>
+  <button type="button" class="btn-secondary" id="resetBtn">Start New Form</button>
   <p class="foot-note">Cartella Services Pty Ltd — Toolbox Talk</p>
 
 </div>
@@ -646,6 +667,11 @@ async function generatePdfBase64(){
 }
 
 
+document.getElementById('printBtn').addEventListener('click', () => window.print());
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (confirm('Clear the whole form and start again?')) window.location.reload();
+});
+
 /* ============ SUBMIT ============ */
 document.getElementById('submitBtn').addEventListener('click', async () => {
   if (!validate()) return;
@@ -667,6 +693,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
     await submitViaHiddenForm(filename, pdfBase64);
     hideOverlay();
     showBanner('Toolbox talk saved successfully.', 'success');
+    setTimeout(() => { window.location.reload(); }, 2000);
   } catch (err){
     hideOverlay();
     showBanner('Error saving: ' + err.message, 'error');
