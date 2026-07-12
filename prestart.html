@@ -127,7 +127,7 @@
     .matrix{font-size:11px;}
   }
 
-  .capturing .add-btn,.capturing .remove-btn,.capturing .clear-sig,.capturing .footer-actions,.capturing .weather-refresh,.capturing .status-banner,.capturing .overlay{display:none !important;}
+  .capturing .add-btn,.capturing .remove-btn,.capturing .clear-sig,.capturing .footer-actions,.capturing .weather-refresh,.capturing .status-banner,.capturing .overlay{display:none !important;} /* legacy, harmless if unused */
 
   .status-banner{
     position:fixed;top:0;left:0;right:0;
@@ -296,7 +296,6 @@
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxpm_6VYAZHwFC-UEWJ0p96Lyh4OWwxgHvWHMmxie-YYnAwGmmwyCI4uCIntLAHRfAV/exec";
@@ -509,53 +508,296 @@ function hideOverlay(){
 }
 
 async function generatePdfBase64(){
-  document.body.classList.add('capturing');
-
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF('p', 'mm', 'a4');
+
   const dateVal = document.getElementById('f-date').value || new Date().toISOString().slice(0,10);
   const projectVal = document.getElementById('f-project').value.trim();
+  const personVal = document.getElementById('f-person').value.trim();
+  const weatherVal = document.getElementById('f-weather-condition').value;
+  const tasksVal = document.getElementById('f-tasks').value;
+  const consultVal = document.getElementById('f-consult').value;
+
   const titleText = projectVal
     ? `Pre-Start Meeting Checklist — ${projectVal} — ${dateVal}`
     : `Pre-Start Meeting Checklist — ${dateVal}`;
   pdf.setProperties({ title: titleText });
-  const pageWidth = 210, pageHeight = 297;
-  const captureOpts = { scale:2, useCORS:true, backgroundColor:'#ffffff', width:640, windowWidth:640 };
-  let y = 0;
-  let placedAny = false;
 
-  async function addBlock(el){
-    if(!el) return;
-    const canvas = await html2canvas(el, captureOpts);
-    const imgWidth = pageWidth;
-    const imgHeight = canvas.height * imgWidth / canvas.width;
-    if(placedAny && y + imgHeight > pageHeight){
+  const pageW = 210, pageH = 297, margin = 15;
+  const contentW = pageW - margin * 2;
+  let y = margin;
+
+  const RED = [216,35,42], INK = [28,28,28], MUTED = [107,107,100], LINE = [220,218,211];
+  const LOW = [79,138,61], LOW_BG = [231,243,226];
+  const MED = [200,144,26], MED_BG = [251,241,221];
+  const HIGH = [178,49,44], HIGH_BG = [251,228,226];
+
+  const logoDataUrl = document.querySelector('header.brand img')?.src || null;
+
+  function ratingColor(key){
+    if(key === 'low') return { fg: LOW, bg: LOW_BG, label: 'Low' };
+    if(key === 'med') return { fg: MED, bg: MED_BG, label: 'Medium' };
+    if(key === 'high') return { fg: HIGH, bg: HIGH_BG, label: 'High' };
+    return { fg: MUTED, bg: [240,239,233], label: '—' };
+  }
+
+  function addHeader(){
+    pdf.setFillColor(28,28,28);
+    pdf.rect(0, 0, pageW, 24, 'F');
+    if(logoDataUrl){
+      try{ pdf.addImage(logoDataUrl, 'PNG', margin, 5, 34, 8.8); }catch(e){}
+    }
+    pdf.setTextColor(255,255,255);
+    pdf.setFont('helvetica','normal');
+    pdf.setFontSize(8);
+    pdf.text('p 1300 973 287', pageW - margin, 8, { align:'right' });
+    pdf.text('a PO Box 1076, Lutwyche, QLD 4030', pageW - margin, 12, { align:'right' });
+    pdf.text('e info@cartella.com.au', pageW - margin, 16, { align:'right' });
+    pdf.text('w www.cartella.com.au', pageW - margin, 20, { align:'right' });
+
+    pdf.setFillColor(RED[0],RED[1],RED[2]);
+    pdf.rect(0, 24, pageW, 9, 'F');
+    pdf.setTextColor(255,255,255);
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(12);
+    pdf.text('Pre-Start Meeting Checklist', margin, 30.5);
+
+    pdf.setTextColor(INK[0],INK[1],INK[2]);
+    y = 40;
+  }
+
+  function addFooter(pageNum, totalPages){
+    pdf.setDrawColor(RED[0],RED[1],RED[2]);
+    pdf.setLineWidth(0.6);
+    pdf.line(margin, pageH - 12, pageW - margin, pageH - 12);
+    pdf.setFont('helvetica','normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+    pdf.text('Cartella Electrical — Pre-Start Meeting Checklist', margin, pageH - 7);
+    pdf.text('Page ' + pageNum + ' of ' + totalPages, pageW - margin, pageH - 7, { align:'right' });
+  }
+
+  function checkBreak(needed){
+    if(y + needed > pageH - 16){
       pdf.addPage();
-      y = 0;
+      addHeader();
+      return true;
     }
-    const imgData = canvas.toDataURL('image/jpeg', 0.85);
-    pdf.addImage(imgData, 'JPEG', 0, y, imgWidth, imgHeight);
-    y += imgHeight;
-    placedAny = true;
+    return false;
   }
 
-  await addBlock(document.querySelector('header.brand'));
-  await addBlock(document.querySelector('.titlebar'));
+  function sectionTitle(text){
+    checkBreak(12);
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(10.5);
+    pdf.setTextColor(RED[0],RED[1],RED[2]);
+    pdf.text(text.toUpperCase(), margin, y);
+    pdf.setDrawColor(RED[0],RED[1],RED[2]);
+    pdf.setLineWidth(0.5);
+    pdf.line(margin, y + 1.5, pageW - margin, y + 1.5);
+    pdf.setTextColor(INK[0],INK[1],INK[2]);
+    y += 8;
+  }
 
-  const sections = Array.from(document.querySelectorAll('.sheet > .section'));
-  for(const sec of sections){
-    if(sec.id === 'hazards-section'){
-      await addBlock(sec.querySelector('h2'));
-      const hazards = sec.querySelectorAll('.hazard');
-      for(const hz of hazards){
-        await addBlock(hz);
+  function wrapAndPrint(text, x, maxWidth, size, bold){
+    if(!text) return;
+    pdf.setFont('helvetica', bold ? 'bold' : 'normal');
+    pdf.setFontSize(size);
+    const lines = pdf.splitTextToSize(text, maxWidth);
+    lines.forEach(line => {
+      checkBreak(5.5);
+      pdf.text(line, x, y);
+      y += 5.2;
+    });
+  }
+
+  function labelValue(label, value){
+    checkBreak(7);
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+    pdf.text(label.toUpperCase(), margin, y);
+    y += 4.5;
+    pdf.setFont('helvetica','normal');
+    pdf.setFontSize(11);
+    pdf.setTextColor(INK[0],INK[1],INK[2]);
+    pdf.text(value || '—', margin, y);
+    y += 7;
+  }
+
+  function ratingBadge(x, yPos, w, ratingKey){
+    const r = ratingColor(ratingKey);
+    pdf.setFillColor(r.bg[0], r.bg[1], r.bg[2]);
+    pdf.roundedRect(x, yPos - 4, w, 6, 1, 1, 'F');
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(8.5);
+    pdf.setTextColor(r.fg[0], r.fg[1], r.fg[2]);
+    pdf.text(r.label, x + w/2, yPos, { align:'center' });
+    pdf.setTextColor(INK[0],INK[1],INK[2]);
+  }
+
+  // ===== PAGE 1 HEADER =====
+  addHeader();
+
+  // ===== DATE / PROJECT / PERSON =====
+  labelValue('Project', projectVal);
+  labelValue('Date', dateVal);
+  labelValue('Person undertaking prestart', personVal);
+
+  // ===== SITE WEATHER =====
+  sectionTitle('Site weather');
+  labelValue('Conditions', weatherVal);
+
+  // ===== GENERAL ITEMS =====
+  sectionTitle('General items');
+  document.querySelectorAll('#general-items .item').forEach(item => {
+    const q = item.querySelector('.q').textContent.trim();
+    const yBtn = item.querySelector('.y'), nBtn = item.querySelector('.n');
+    const answer = yBtn.classList.contains('active') ? 'Y' : (nBtn.classList.contains('active') ? 'N' : '—');
+    const comment = item.querySelector('.comment input').value;
+
+    checkBreak(10);
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(9.5);
+    pdf.setFillColor(240,239,233);
+    pdf.roundedRect(margin, y - 4, 8, 6, 1, 1, 'F');
+    pdf.setTextColor(INK[0],INK[1],INK[2]);
+    pdf.text(answer, margin + 4, y, { align:'center' });
+    wrapAndPrint(q, margin + 12, contentW - 12, 9.5, false);
+    if(comment){
+      pdf.setFont('helvetica','italic');
+      pdf.setFontSize(8.5);
+      pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+      wrapAndPrint('Comment: ' + comment, margin + 12, contentW - 12, 8.5, false);
+      pdf.setTextColor(INK[0],INK[1],INK[2]);
+    }
+    y += 2.5;
+  });
+
+  // ===== TASKS =====
+  sectionTitle('Tasks being undertaken on site today');
+  wrapAndPrint(tasksVal || '(none entered)', margin, contentW, 10, false);
+  y += 3;
+
+  // ===== HAZARD ASSESSMENT =====
+  sectionTitle('Hazard assessment');
+  document.querySelectorAll('#hazards .hazard').forEach(h => {
+    const title = h.querySelector('.hazard-head input').value;
+    const desc = h.querySelectorAll('textarea')[0]?.value || '';
+    const ppe = h.querySelector('.ppe')?.value || '';
+    const pBefore = h.querySelector('.p-before')?.value || '';
+    const cBefore = h.querySelector('.c-before')?.value || '';
+    const pAfter = h.querySelector('.p-after')?.value || '';
+    const cAfter = h.querySelector('.c-after')?.value || '';
+    const beforeKey = (pBefore && cBefore) ? RATING[pBefore][cBefore] : null;
+    const afterKey = (pAfter && cAfter) ? RATING[pAfter][cAfter] : null;
+
+    checkBreak(14);
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(10.5);
+    pdf.setTextColor(INK[0],INK[1],INK[2]);
+    pdf.text(title || 'Potential hazard', margin, y);
+    y += 5.5;
+
+    wrapAndPrint(desc || '(no description)', margin, contentW, 9.5, false);
+    y += 1;
+
+    checkBreak(7);
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(8.5);
+    pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+    pdf.text('RISK BEFORE CONTROLS', margin, y);
+    if(beforeKey) ratingBadge(margin + 48, y, 22, beforeKey);
+    y += 6;
+
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(9);
+    pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+    pdf.text('CONTROLS + PPE', margin, y);
+    y += 4.5;
+    wrapAndPrint(ppe || '(none entered)', margin, contentW, 9.5, false);
+    y += 1;
+
+    checkBreak(7);
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(8.5);
+    pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+    pdf.text('RISK AFTER CONTROLS', margin, y);
+    if(afterKey) ratingBadge(margin + 48, y, 22, afterKey);
+    y += 8;
+
+    pdf.setDrawColor(LINE[0],LINE[1],LINE[2]);
+    pdf.setLineWidth(0.3);
+    checkBreak(4);
+    pdf.line(margin, y - 4, pageW - margin, y - 4);
+    pdf.setTextColor(INK[0],INK[1],INK[2]);
+  });
+
+  // ===== GENERAL CONSULTATION =====
+  sectionTitle('General consultation — issues or concerns raised by workers');
+  wrapAndPrint(consultVal || '(none entered)', margin, contentW, 10, false);
+  y += 3;
+
+  // ===== ATTENDANCE =====
+  function attendanceSection(title, rows, includeCompany){
+    sectionTitle(title);
+    rows.forEach(row => {
+      const inputs = row.querySelectorAll('input[type=text]');
+      const name = inputs[0]?.value || '(name not entered)';
+      const company = includeCompany ? (inputs[1]?.value || '') : '';
+      const canvas = row.querySelector('canvas.sig');
+      const hasSig = canvas && !isCanvasBlank(canvas);
+
+      checkBreak(16);
+      pdf.setFont('helvetica','bold');
+      pdf.setFontSize(10);
+      pdf.setTextColor(INK[0],INK[1],INK[2]);
+      pdf.text(name, margin, y);
+      if(company){
+        pdf.setFont('helvetica','normal');
+        pdf.setFontSize(9);
+        pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+        pdf.text(company, margin + 70, y);
+        pdf.setTextColor(INK[0],INK[1],INK[2]);
       }
-    }else{
-      await addBlock(sec);
-    }
+      if(hasSig){
+        try{ pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin + 120, y - 8, 45, 12); }catch(e){}
+      }else{
+        pdf.setFont('helvetica','italic');
+        pdf.setFontSize(8.5);
+        pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+        pdf.text('(not signed)', margin + 120, y);
+        pdf.setTextColor(INK[0],INK[1],INK[2]);
+      }
+      y += 5;
+      pdf.setDrawColor(LINE[0],LINE[1],LINE[2]);
+      pdf.setLineWidth(0.3);
+      pdf.line(margin, y, pageW - margin, y);
+      y += 5;
+    });
   }
 
-  document.body.classList.remove('capturing');
+  function isCanvasBlank(canvas){
+    try{
+      const ctx = canvas.getContext('2d');
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      for(let i = 3; i < data.length; i += 4){
+        if(data[i] !== 0) return false;
+      }
+      return true;
+    }catch(e){ return true; }
+  }
+
+  attendanceSection('Attendance — Cartella personnel', document.querySelectorAll('#attendees-staff .attend-row'), false);
+  attendanceSection('Attendance — sub contractors', document.querySelectorAll('#attendees-sub .attend-row-sub'), true);
+
+  // ===== FOOTERS =====
+  const totalPages = pdf.internal.getNumberOfPages();
+  for(let p = 1; p <= totalPages; p++){
+    pdf.setPage(p);
+    addFooter(p, totalPages);
+  }
+
   const dataUri = pdf.output('datauristring');
   return dataUri.split(',')[1];
 }
