@@ -532,7 +532,29 @@ async function generatePdfBase64(){
   const MED = [200,144,26], MED_BG = [251,241,221];
   const HIGH = [178,49,44], HIGH_BG = [251,228,226];
 
-  const logoDataUrl = document.querySelector('header.brand img')?.src || null;
+  const rawLogoUrl = document.querySelector('header.brand img')?.src || null;
+  const logoDataUrl = await flattenLogoToJpeg(rawLogoUrl, [28,28,28]);
+
+  function flattenLogoToJpeg(src, bgRgb){
+    return new Promise((resolve) => {
+      if(!src){ resolve(null); return; }
+      const img = new Image();
+      img.onload = () => {
+        try{
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = `rgb(${bgRgb[0]},${bgRgb[1]},${bgRgb[2]})`;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/jpeg', 0.92));
+        }catch(e){ resolve(null); }
+      };
+      img.onerror = () => resolve(null);
+      img.src = src;
+    });
+  }
 
   function ratingColor(key){
     if(key === 'low') return { fg: LOW, bg: LOW_BG, label: 'Low' };
@@ -545,7 +567,7 @@ async function generatePdfBase64(){
     pdf.setFillColor(28,28,28);
     pdf.rect(0, 0, pageW, 24, 'F');
     if(logoDataUrl){
-      try{ pdf.addImage(logoDataUrl, 'PNG', margin, 5, 34, 8.8); }catch(e){}
+      try{ pdf.addImage(logoDataUrl, 'JPEG', margin, 5, 34, 8.8); }catch(e){}
     }
     pdf.setTextColor(255,255,255);
     pdf.setFont('helvetica','normal');
