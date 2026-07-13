@@ -298,7 +298,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyhq6GOMpaMLcwAmhvaRytc6c2eO1NAfTT166JBsprBsjIjtOnyjlcsuNu0qg7WFc7Q/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwv6AhLf_QYZJ_5VtE--rO_7QnWi3GBXMEvYGbudlsRPcf-wL8kawoxpJj-2ARY9FCU/exec";
 
 const GENERAL_ITEMS = [
   "Has everyone been inducted into the site and has signed in?",
@@ -678,6 +678,71 @@ async function generatePdfBase64(){
   sectionTitle('Tasks being undertaken on site today');
   wrapAndPrint(tasksVal || '(none entered)', margin, contentW, 10, false);
   y += 3;
+
+  // ===== RISK MATRIX =====
+  sectionTitle('Risk matrix');
+  checkBreak(40);
+  (function drawRiskMatrix(){
+    const cols = ['', 'Low', 'Medium', 'High'];
+    const rows = [
+      ['High', 'med', 'high', 'high'],
+      ['Medium', 'low', 'med', 'high'],
+      ['Low', 'low', 'low', 'med']
+    ];
+    const cellW = 24, cellH = 7;
+    const startX = margin, startY = y;
+
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(8.5);
+    cols.forEach((c, i) => {
+      if(i === 0) return;
+      pdf.setFillColor(246,245,240);
+      pdf.rect(startX + i*cellW, startY, cellW, cellH, 'F');
+      pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+      pdf.text(c, startX + i*cellW + cellW/2, startY + cellH/2 + 1.2, { align:'center' });
+    });
+
+    rows.forEach((row, ri) => {
+      const rowY = startY + (ri+1) * cellH;
+      pdf.setFillColor(246,245,240);
+      pdf.rect(startX, rowY, cellW, cellH, 'F');
+      pdf.setFont('helvetica','bold');
+      pdf.setFontSize(8.5);
+      pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+      pdf.text(row[0], startX + cellW/2, rowY + cellH/2 + 1.2, { align:'center' });
+
+      row.slice(1).forEach((key, ci) => {
+        const r = ratingColor(key);
+        const cellX = startX + (ci+1)*cellW;
+        pdf.setFillColor(r.bg[0], r.bg[1], r.bg[2]);
+        pdf.rect(cellX, rowY, cellW, cellH, 'F');
+        pdf.setFont('helvetica','bold');
+        pdf.setFontSize(8.5);
+        pdf.setTextColor(r.fg[0], r.fg[1], r.fg[2]);
+        pdf.text(r.label, cellX + cellW/2, rowY + cellH/2 + 1.2, { align:'center' });
+      });
+    });
+
+    pdf.setDrawColor(LINE[0],LINE[1],LINE[2]);
+    pdf.setLineWidth(0.3);
+    for(let i = 0; i <= 4; i++) pdf.line(startX + i*cellW, startY, startX + i*cellW, startY + 4*cellH);
+    for(let i = 0; i <= 4; i++) pdf.line(startX, startY + i*cellH, startX + 4*cellW, startY + i*cellH);
+
+    pdf.setTextColor(INK[0],INK[1],INK[2]);
+    pdf.setFont('helvetica','normal');
+    pdf.setFontSize(9);
+    const noteLines = pdf.splitTextToSize(
+      'List the hazards for tasks being carried out today and the control measures used to reduce the associated risks.',
+      contentW - (4*cellW + 8)
+    );
+    let noteY = startY + 4;
+    noteLines.forEach(line => {
+      pdf.text(line, startX + 4*cellW + 8, noteY);
+      noteY += 4.5;
+    });
+
+    y = startY + Math.max(4*cellH, noteY - startY) + 6;
+  })();
 
   // ===== HAZARD ASSESSMENT =====
   sectionTitle('Hazard assessment');
